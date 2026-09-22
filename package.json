@@ -1,0 +1,8 @@
+{
+  "name": "proyecto-oficios",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
