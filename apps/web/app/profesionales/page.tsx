@@ -82,7 +82,7 @@ export default async function Profesionales({
             {s.price_text && <span>Precio: {s.price_text}</span>}
             <span>Zona: {[s.neighborhood, s.municipality, s.state].filter(Boolean).join(", ") || "Sin zona"}</span>
             {p && p.review_count > 0 && <span>Calificación: {p.avg_rating} ({p.review_count} reseñas)</span>}
-            {p?.years_experience != null && <span>{p.years_experience} años de experiencia</span>}
+            {p?.years_experience != null && <span>{p.years_experience} años de experiencia</span>}<a href={`/solicitar?servicio=${s.id}`}>Solicitar servicio</a>
           </div>
         );
       })}
@@ -91,3 +91,4 @@ export default async function Profesionales({
     </main>
   );
 }
+
