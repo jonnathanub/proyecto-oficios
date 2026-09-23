@@ -25,6 +25,26 @@ const ESTADOS: Record<string, string> = {
   cancelled: "Cancelada",
 };
 
+const SIGUIENTES_ESTADOS: Record<string, { status: string; label: string }[]> = {
+  pending: [
+    { status: "contacted", label: "Marcar como contactado" },
+    { status: "accepted", label: "Aceptar solicitud" },
+    { status: "cancelled", label: "Cancelar" },
+  ],
+  contacted: [
+    { status: "accepted", label: "Aceptar solicitud" },
+    { status: "cancelled", label: "Cancelar" },
+  ],
+  accepted: [
+    { status: "in_progress", label: "Iniciar trabajo" },
+    { status: "cancelled", label: "Cancelar" },
+  ],
+  in_progress: [
+    { status: "completed", label: "Marcar como completada" },
+    { status: "cancelled", label: "Cancelar" },
+  ],
+};
+
 export default function Solicitudes() {
   const router = useRouter();
   const [cargando, setCargando] = useState(true);
@@ -33,100 +53,297 @@ export default function Solicitudes() {
   const [filas, setFilas] = useState<Solicitud[]>([]);
   const [titulos, setTitulos] = useState<Record<string, string>>({});
   const [nombres, setNombres] = useState<Record<string, string>>({});
+  const [actualizando, setActualizando] = useState<string | null>(null);
+
+  async function cargarSolicitudes() {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    const { data: u } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const miRol = u?.role ?? "";
+    setRol(miRol);
+
+    let consulta = supabase
+      .from("service_requests")
+      .select(
+        "id, client_id, professional_id, service_id, description, desired_date, budget, status, created_at"
+      )
+      .order("created_at", { ascending: false });
+
+    if (miRol === "professional") {
+      const { data: p } = await supabase
+        .from("professional_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!p) {
+        setMensaje("Tu perfil profesional todavía no existe.");
+        setCargando(false);
+        return;
+      }
+
+      consulta = consulta.eq("professional_id", p.id);
+    } else if (miRol === "client") {
+      consulta = consulta.eq("client_id", user.id);
+    } else {
+      setMensaje("Esta sección es para clientes y profesionales.");
+      setCargando(false);
+      return;
+    }
+
+    const { data, error } = await consulta;
+
+    if (error) {
+      setMensaje(`Error al cargar: ${error.message}`);
+      setCargando(false);
+      return;
+    }
+
+    const lista = (data ?? []) as Solicitud[];
+    setFilas(lista);
+
+    const servIds = [
+      ...new Set(lista.map((f) => f.service_id).filter(Boolean)),
+    ] as string[];
+
+    if (servIds.length > 0) {
+      const { data: sv } = await supabase
+        .from("services")
+        .select("id, title")
+        .in("id", servIds);
+
+      setTitulos(
+        Object.fromEntries(
+          (sv ?? []).map((x) => [x.id as string, x.title as string])
+        )
+      );
+    }
+
+    const mapa: Record<string, string> = {};
+
+    if (miRol === "professional") {
+      const ids = [...new Set(lista.map((f) => f.client_id))];
+
+      if (ids.length > 0) {
+        const { data: us } = await supabase
+          .from("users")
+          .select("id, full_name")
+          .in("id", ids);
+
+        (us ?? []).forEach((x) => {
+          mapa[x.id as string] =
+            (x.full_name as string) ?? "Sin nombre";
+        });
+      }
+    } else {
+      const profIds = [
+        ...new Set(lista.map((f) => f.professional_id)),
+      ];
+
+      if (profIds.length > 0) {
+        const { data: pp } = await supabase
+          .from("professional_profiles")
+          .select("id, user_id")
+          .in("id", profIds);
+
+        const userIds = (pp ?? []).map(
+          (x) => x.user_id as string
+        );
+
+        const { data: us } =
+          userIds.length > 0
+            ? await supabase
+                .from("users")
+                .select("id, full_name")
+                .in("id", userIds)
+            : {
+                data: [] as {
+                  id: string;
+                  full_name: string | null;
+                }[],
+              };
+
+        const porUsuario = Object.fromEntries(
+          (us ?? []).map((x) => [
+            x.id as string,
+            (x.full_name as string) ?? "Sin nombre",
+          ])
+        );
+
+        (pp ?? []).forEach((x) => {
+          mapa[x.id as string] =
+            porUsuario[x.user_id as string] ?? "Sin nombre";
+        });
+      }
+    }
+
+    setNombres(mapa);
+    setCargando(false);
+  }
 
   useEffect(() => {
-    async function cargar() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login");
-        return;
-      }
-
-      const { data: u } = await supabase.from("users").select("role").eq("id", user.id).single();
-      const miRol = u?.role ?? "";
-      setRol(miRol);
-
-      let consulta = supabase
-        .from("service_requests")
-        .select("id, client_id, professional_id, service_id, description, desired_date, budget, status, created_at")
-        .order("created_at", { ascending: false });
-
-      if (miRol === "professional") {
-        const { data: p } = await supabase.from("professional_profiles").select("id").eq("user_id", user.id).maybeSingle();
-        if (!p) {
-          setMensaje("Tu perfil profesional todavía no existe.");
-          setCargando(false);
-          return;
-        }
-        consulta = consulta.eq("professional_id", p.id);
-      } else if (miRol === "client") {
-        consulta = consulta.eq("client_id", user.id);
-      } else {
-        setMensaje("Esta sección es para clientes y profesionales.");
-        setCargando(false);
-        return;
-      }
-
-      const { data, error } = await consulta;
-      if (error) {
-        setMensaje(`Error al cargar: ${error.message}`);
-        setCargando(false);
-        return;
-      }
-      const lista = (data ?? []) as Solicitud[];
-      setFilas(lista);
-
-      const servIds = [...new Set(lista.map((f) => f.service_id).filter(Boolean))] as string[];
-      if (servIds.length > 0) {
-        const { data: sv } = await supabase.from("services").select("id, title").in("id", servIds);
-        setTitulos(Object.fromEntries((sv ?? []).map((x) => [x.id as string, x.title as string])));
-      }
-
-      const mapa: Record<string, string> = {};
-      if (miRol === "professional") {
-        const ids = [...new Set(lista.map((f) => f.client_id))];
-        if (ids.length > 0) {
-          const { data: us } = await supabase.from("users").select("id, full_name").in("id", ids);
-          (us ?? []).forEach((x) => { mapa[x.id as string] = (x.full_name as string) ?? "Sin nombre"; });
-        }
-      } else {
-        const profIds = [...new Set(lista.map((f) => f.professional_id))];
-        if (profIds.length > 0) {
-          const { data: pp } = await supabase.from("professional_profiles").select("id, user_id").in("id", profIds);
-          const userIds = (pp ?? []).map((x) => x.user_id as string);
-          const { data: us } = userIds.length > 0
-            ? await supabase.from("users").select("id, full_name").in("id", userIds)
-            : { data: [] as { id: string; full_name: string | null }[] };
-          const porUsuario = Object.fromEntries((us ?? []).map((x) => [x.id as string, (x.full_name as string) ?? "Sin nombre"]));
-          (pp ?? []).forEach((x) => { mapa[x.id as string] = porUsuario[x.user_id as string] ?? "Sin nombre"; });
-        }
-      }
-      setNombres(mapa);
-      setCargando(false);
-    }
-    cargar();
+    cargarSolicitudes();
   }, [router]);
 
-  if (cargando) return <main style={{ padding: 16 }}>Cargando...</main>;
+  async function cambiarEstado(id: string, nuevoEstado: string) {
+    setActualizando(id);
+    setMensaje("");
+
+    const { error } = await supabase
+      .from("service_requests")
+      .update({ status: nuevoEstado })
+      .eq("id", id);
+
+    if (error) {
+      setMensaje(`No se pudo actualizar: ${error.message}`);
+      setActualizando(null);
+      return;
+    }
+
+    await cargarSolicitudes();
+    setActualizando(null);
+  }
+
+  if (cargando) {
+    return <main style={{ padding: 16 }}>Cargando...</main>;
+  }
 
   return (
-    <main style={{ maxWidth: 560, margin: "40px auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <h1>{rol === "professional" ? "Solicitudes recibidas" : "Mis solicitudes"}</h1>
+    <main
+      style={{
+        maxWidth: 560,
+        margin: "40px auto",
+        padding: 16,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <h1>
+        {rol === "professional"
+          ? "Solicitudes recibidas"
+          : "Mis solicitudes"}
+      </h1>
 
       {mensaje && <p>{mensaje}</p>}
-      {!mensaje && filas.length === 0 && <p>Todavía no hay solicitudes.</p>}
+
+      {!mensaje && filas.length === 0 && (
+        <p>Todavía no hay solicitudes.</p>
+      )}
 
       {filas.map((f) => (
-        <div key={f.id} style={{ border: "1px solid #666", borderRadius: 8, padding: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-          <strong>{f.service_id ? titulos[f.service_id] ?? "Servicio" : "Servicio"}</strong>
-          {rol === "professional"
-            ? <span>Cliente: {nombres[f.client_id] ?? "Sin nombre"}</span>
-            : <span>Profesional: {nombres[f.professional_id] ?? "Sin nombre"}</span>}
+        <div
+          key={f.id}
+          style={{
+            border: "1px solid #666",
+            borderRadius: 8,
+            padding: 12,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
+          <strong>
+            {f.service_id
+              ? titulos[f.service_id] ?? "Servicio"
+              : "Servicio"}
+          </strong>
+
+          {rol === "professional" ? (
+            <span>
+              Cliente: {nombres[f.client_id] ?? "Sin nombre"}
+            </span>
+          ) : (
+            <span>
+              Profesional:{" "}
+              {nombres[f.professional_id] ?? "Sin nombre"}
+            </span>
+          )}
+
           {f.description && <span>{f.description}</span>}
-          {f.desired_date && <span>Fecha deseada: {f.desired_date}</span>}
-          {f.budget != null && <span>Presupuesto: ${f.budget} MXN</span>}
-          <span>Estado: {ESTADOS[f.status] ?? f.status}</span>
-          <span>Enviada: {new Date(f.created_at).toLocaleDateString("es-MX")}</span>
+
+          {f.desired_date && (
+            <span>Fecha deseada: {f.desired_date}</span>
+          )}
+
+          {f.budget != null && (
+            <span>Presupuesto: ${f.budget} MXN</span>
+          )}
+
+          <strong>
+            Estado: {ESTADOS[f.status] ?? f.status}
+          </strong>
+
+          <span>
+            Enviada:{" "}
+            {new Date(f.created_at).toLocaleDateString("es-MX")}
+          </span>
+
+          {rol === "professional" &&
+            SIGUIENTES_ESTADOS[f.status] &&
+            f.status !== "completed" &&
+            f.status !== "cancelled" && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                  marginTop: 6,
+                }}
+              >
+                {SIGUIENTES_ESTADOS[f.status].map((accion) => (
+                  <button
+                    key={accion.status}
+                    onClick={() =>
+                      cambiarEstado(f.id, accion.status)
+                    }
+                    disabled={actualizando === f.id}
+                    style={{
+                      padding: "8px 10px",
+                      cursor:
+                        actualizando === f.id
+                          ? "not-allowed"
+                          : "pointer",
+                    }}
+                  >
+                    {actualizando === f.id
+                      ? "Actualizando..."
+                      : accion.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+          {rol === "client" &&
+            f.status === "pending" && (
+              <button
+                onClick={() =>
+                  cambiarEstado(f.id, "cancelled")
+                }
+                disabled={actualizando === f.id}
+                style={{
+                  padding: "8px 10px",
+                  cursor:
+                    actualizando === f.id
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                {actualizando === f.id
+                  ? "Cancelando..."
+                  : "Cancelar solicitud"}
+              </button>
+            )}
         </div>
       ))}
 
