@@ -54,6 +54,7 @@ export default function Solicitudes() {
   const [titulos, setTitulos] = useState<Record<string, string>>({});
   const [nombres, setNombres] = useState<Record<string, string>>({});
   const [actualizando, setActualizando] = useState<string | null>(null);
+  const [reseniadas, setReseniadas] = useState<Set<string>>(new Set()); // NUEVO
 
   async function cargarSolicitudes() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -188,6 +189,25 @@ export default function Solicitudes() {
     }
 
     setNombres(mapa);
+
+    // NUEVO: saber qué solicitudes completadas ya tienen reseña
+    if (miRol === "client") {
+      const completadasIds = lista
+        .filter((f) => f.status === "completed")
+        .map((f) => f.id);
+
+      if (completadasIds.length > 0) {
+        const { data: rs } = await supabase
+          .from("reviews")
+          .select("service_request_id")
+          .in("service_request_id", completadasIds);
+
+        setReseniadas(
+          new Set((rs ?? []).map((r) => r.service_request_id as string))
+        );
+      }
+    }
+
     setCargando(false);
   }
 
@@ -344,6 +364,19 @@ export default function Solicitudes() {
                   : "Cancelar solicitud"}
               </button>
             )}
+
+          {/* NUEVO: bloque de reseña */}
+          {rol === "client" && f.status === "completed" && (
+            reseniadas.has(f.id) ? (
+              <span>✅ Ya calificaste este servicio</span>
+            ) : (
+              <a href={`/resenas/${f.id}`}>
+                <button style={{ padding: "8px 10px", cursor: "pointer" }}>
+                  Calificar este servicio
+                </button>
+              </a>
+            )
+          )}
         </div>
       ))}
 
