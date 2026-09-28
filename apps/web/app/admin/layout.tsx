@@ -52,6 +52,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <strong>Panel Admin</strong>
         <a href="/admin">Dashboard</a>
         <a href="/admin/usuarios">Usuarios</a>
+        <a href="/admin/publicaciones">Publicaciones</a>
+        <a href="/admin/reportes">Reportes</a>
+        <a href="/admin/categorias">Categorias</a>
+        <a href="/admin/suscripciones">Suscripciones</a>
         <a href="/cuenta">Salir del panel</a>
       </nav>
       <div style={{ flex: 1, padding: 16 }}>{children}</div>
