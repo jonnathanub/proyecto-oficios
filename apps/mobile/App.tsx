@@ -4,6 +4,7 @@ import Login from "./screens/Login";
 import Registro from "./screens/Registro";
 import Cuenta from "./screens/Cuenta";
 import Profesionales from "./screens/Profesionales";
+import Solicitar from "./screens/Solicitar";
 
 const Stack = createNativeStackNavigator();
 
@@ -15,6 +16,7 @@ export default function App() {
         <Stack.Screen name="Registro" component={Registro} options={{ title: "Crear cuenta" }} />
         <Stack.Screen name="Cuenta" component={Cuenta} options={{ title: "Mi cuenta" }} />
         <Stack.Screen name="Profesionales" component={Profesionales} options={{ title: "Profesionales" }} />
+        <Stack.Screen name="Solicitar" component={Solicitar} options={{ title: "Solicitar servicio" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
