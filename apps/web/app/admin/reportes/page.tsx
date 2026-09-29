@@ -20,20 +20,30 @@ const TIPOS: Record<string, string> = {
   user: "Usuario",
 };
 
+const POR_PAGINA = 20;
+
 export default function AdminReportes() {
   const [reportes, setReportes] = useState<Reporte[]>([]);
   const [nombres, setNombres] = useState<Record<string, string>>({});
   const [cargando, setCargando] = useState(true);
   const [actualizando, setActualizando] = useState<string | null>(null);
+  const [pagina, setPagina] = useState(1);
+  const [total, setTotal] = useState(0);
 
   async function cargar() {
-    const { data } = await supabase
+    setCargando(true);
+    const desde = (pagina - 1) * POR_PAGINA;
+    const hasta = desde + POR_PAGINA - 1;
+
+    const { data, count } = await supabase
       .from("reports")
-      .select("id, reporter_id, target_type, target_id, reason, description, status, created_at")
-      .order("created_at", { ascending: false });
+      .select("id, reporter_id, target_type, target_id, reason, description, status, created_at", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(desde, hasta);
 
     const lista = (data ?? []) as Reporte[];
     setReportes(lista);
+    setTotal(count ?? 0);
 
     const ids = [...new Set(lista.map((r) => r.reporter_id))];
     if (ids.length > 0) {
@@ -51,7 +61,7 @@ export default function AdminReportes() {
 
   useEffect(() => {
     cargar();
-  }, []);
+  }, [pagina]);
 
   async function actualizarEstado(id: string, nuevoEstado: string) {
     setActualizando(id);
@@ -60,11 +70,16 @@ export default function AdminReportes() {
     setActualizando(null);
   }
 
+  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+
   if (cargando) return <p>Cargando...</p>;
 
   return (
     <main>
       <h1>Reportes</h1>
+      <p style={{ fontSize: 13, opacity: 0.75 }}>
+        {total} reporte{total !== 1 ? "s" : ""} - pagina {pagina} de {totalPaginas}
+      </p>
       {reportes.length === 0 && <p>No hay reportes.</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {reportes.map((r) => (
@@ -93,6 +108,18 @@ export default function AdminReportes() {
           </div>
         ))}
       </div>
+
+      {totalPaginas > 1 && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "center", marginTop: 16 }}>
+          {pagina > 1 && (
+            <button onClick={() => setPagina((p) => p - 1)}>Anterior</button>
+          )}
+          <span>Pagina {pagina} de {totalPaginas}</span>
+          {pagina < totalPaginas && (
+            <button onClick={() => setPagina((p) => p + 1)}>Siguiente</button>
+          )}
+        </div>
+      )}
     </main>
   );
 }

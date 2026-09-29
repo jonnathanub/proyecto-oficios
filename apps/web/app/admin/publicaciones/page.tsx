@@ -13,20 +13,30 @@ type Servicio = {
   created_at: string;
 };
 
+const POR_PAGINA = 20;
+
 export default function AdminPublicaciones() {
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [categorias, setCategorias] = useState<Record<string, string>>({});
   const [cargando, setCargando] = useState(true);
   const [actualizando, setActualizando] = useState<string | null>(null);
+  const [pagina, setPagina] = useState(1);
+  const [total, setTotal] = useState(0);
 
   async function cargar() {
-    const { data } = await supabase
+    setCargando(true);
+    const desde = (pagina - 1) * POR_PAGINA;
+    const hasta = desde + POR_PAGINA - 1;
+
+    const { data, count } = await supabase
       .from("services")
-      .select("id, title, category_id, active, state, municipality, created_at")
-      .order("created_at", { ascending: false });
+      .select("id, title, category_id, active, state, municipality, created_at", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(desde, hasta);
 
     const lista = (data ?? []) as Servicio[];
     setServicios(lista);
+    setTotal(count ?? 0);
 
     const catIds = [...new Set(lista.map((s) => s.category_id))];
     if (catIds.length > 0) {
@@ -44,7 +54,7 @@ export default function AdminPublicaciones() {
 
   useEffect(() => {
     cargar();
-  }, []);
+  }, [pagina]);
 
   async function alternarActivo(id: string, actual: boolean) {
     setActualizando(id);
@@ -61,11 +71,16 @@ export default function AdminPublicaciones() {
     setActualizando(null);
   }
 
+  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+
   if (cargando) return <p>Cargando...</p>;
 
   return (
     <main>
       <h1>Publicaciones</h1>
+      <p style={{ fontSize: 13, opacity: 0.75 }}>
+        {total} publicacion{total !== 1 ? "es" : ""} - pagina {pagina} de {totalPaginas}
+      </p>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
@@ -101,6 +116,18 @@ export default function AdminPublicaciones() {
           ))}
         </tbody>
       </table>
+
+      {totalPaginas > 1 && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "center", marginTop: 16 }}>
+          {pagina > 1 && (
+            <button onClick={() => setPagina((p) => p - 1)}>Anterior</button>
+          )}
+          <span>Pagina {pagina} de {totalPaginas}</span>
+          {pagina < totalPaginas && (
+            <button onClick={() => setPagina((p) => p + 1)}>Siguiente</button>
+          )}
+        </div>
+      )}
     </main>
   );
 }

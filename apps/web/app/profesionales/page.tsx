@@ -1,9 +1,10 @@
 ﻿import { supabase } from "../../lib/supabase";
 import FavoritoButton from "../../components/FavoritoButton";
+import AdSlot from "../../lib/AdSlot";
 
 export const metadata = {
   title: "Encuentra profesionales de oficio",
-  description: "Busca plomeros, electricistas, carpinteros y mÃƒÆ’Ã‚Â¡s profesionales cerca de ti.",
+  description: "Busca plomeros, electricistas, carpinteros y mas profesionales cerca de ti.",
 };
 
 type Fila = {
@@ -25,12 +26,17 @@ type Fila = {
   } | null;
 };
 
+const POR_PAGINA = 20;
+
 export default async function Profesionales({
   searchParams,
 }: {
-  searchParams: Promise<{ categoria?: string; municipio?: string }>;
+  searchParams: Promise<{ categoria?: string; municipio?: string; pagina?: string }>;
 }) {
-  const { categoria = "", municipio = "" } = await searchParams;
+  const { categoria = "", municipio = "", pagina = "1" } = await searchParams;
+  const paginaActual = Math.max(1, parseInt(pagina, 10) || 1);
+  const desde = (paginaActual - 1) * POR_PAGINA;
+  const hasta = desde + POR_PAGINA - 1;
 
   const { data: cats } = await supabase
     .from("categories")
@@ -41,29 +47,37 @@ export default async function Profesionales({
   let consulta = supabase
     .from("services")
     .select(
-      "id, title, description, price_text, state, municipality, neighborhood, category_id, professional_profiles(id, bio, years_experience, avg_rating, review_count, users(full_name))"
+      "id, title, description, price_text, state, municipality, neighborhood, category_id, professional_profiles(id, bio, years_experience, avg_rating, review_count, users(full_name))",
+      { count: "exact" }
     )
     .eq("active", true)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .range(desde, hasta);
 
   if (categoria) {
     consulta = consulta.eq("category_id", categoria);
   }
 
   if (municipio.trim()) {
-    consulta = consulta.ilike(
-      "municipality",
-      `%${municipio.trim()}%`
-    );
+    consulta = consulta.ilike("municipality", `%${municipio.trim()}%`);
   }
 
-  const { data, error } = await consulta;
+  const { data, error, count } = await consulta;
 
   const servicios = (data ?? []) as unknown as Fila[];
+  const total = count ?? 0;
+  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 
   const nombreCategoria = (id: string) =>
     (cats ?? []).find((c) => c.id === id)?.name ?? "Oficio";
+
+  function urlPagina(n: number) {
+    const params = new URLSearchParams();
+    if (categoria) params.set("categoria", categoria);
+    if (municipio) params.set("municipio", municipio);
+    params.set("pagina", String(n));
+    return `/profesionales?${params.toString()}`;
+  }
 
   return (
     <main
@@ -105,65 +119,87 @@ export default async function Profesionales({
         <button type="submit">Buscar</button>
       </form>
 
+      <AdSlot location="search_results" categoryId={categoria || undefined} />
+
       {error && <p>Error al cargar: {error.message}</p>}
 
       {!error && servicios.length === 0 && (
         <p>No encontramos servicios con esos filtros.</p>
       )}
 
-      {servicios.map((s) => {
+      {!error && total > 0 && (
+        <p style={{ fontSize: 13, opacity: 0.75 }}>
+          {total} resultado{total !== 1 ? "s" : ""} - pagina {paginaActual} de {totalPaginas}
+        </p>
+      )}
+
+      {servicios.map((s, index) => {
         const p = s.professional_profiles;
 
         return (
-          <div
-            key={s.id}
-            style={{
-              border: "1px solid #666",
-              borderRadius: 8,
-              padding: 12,
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-            }}
-          >
-            <strong>{s.title}</strong>
+          <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div
+              style={{
+                border: "1px solid #666",
+                borderRadius: 8,
+                padding: 12,
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+              }}
+            >
+              <strong>{s.title}</strong>
 
-            <span>{nombreCategoria(s.category_id)}</span>
+              <span>{nombreCategoria(s.category_id)}</span>
 
-            <span>
-              Profesional: {p?.users?.full_name ?? "Sin nombre"}
-            </span>
+              <span>
+                Profesional: {p?.users?.full_name ?? "Sin nombre"}
+              </span>
 
-            {s.description && <span>{s.description}</span>}
+              {s.description && <span>{s.description}</span>}
 
-            {s.price_text && (
-              <span>Precio: {s.price_text}</span>
-            )}
+              {s.price_text && (
+                <span>Precio: {s.price_text}</span>
+              )}
 
-            <span>
-              Zona:{" "}
-              {[s.neighborhood, s.municipality, s.state]
-                .filter(Boolean)
-                .join(", ") || "Sin zona"}
-            </span>
+              <span>
+                Zona:{" "}
+                {[s.neighborhood, s.municipality, s.state]
+                  .filter(Boolean)
+                  .join(", ") || "Sin zona"}
+              </span>
 
-            {p && (p.review_count > 0 ? (<span>Calificacion: {p.avg_rating} ({p.review_count} resenas)</span>) : (<span>Sin calificaciones todavia</span>))}
+              {p && (p.review_count > 0 ? (<span>Calificacion: {p.avg_rating} ({p.review_count} resenas)</span>) : (<span>Sin calificaciones todavia</span>))}
 
-            {p && (p.years_experience != null ? (<span>{p.years_experience} anos de experiencia</span>) : (<span>Experiencia: No especificada</span>))}
+              {p && (p.years_experience != null ? (<span>{p.years_experience} anos de experiencia</span>) : (<span>Experiencia: No especificada</span>))}
 
-            {p && (
-              <FavoritoButton professionalId={p.id} />
-            )}
+              {p && (
+                <FavoritoButton professionalId={p.id} />
+              )}
 
-            <a href={`/solicitar?servicio=${s.id}`}>
-              Solicitar servicio
-            </a>
+              <a href={`/solicitar?servicio=${s.id}`}>
+                Solicitar servicio
+              </a>
+            </div>
+
+            {index === 1 && <AdSlot location="sponsored_card" categoryId={categoria || undefined} />}
           </div>
         );
       })}
+
+      {totalPaginas > 1 && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
+          {paginaActual > 1 && (
+            <a href={urlPagina(paginaActual - 1)}>Anterior</a>
+          )}
+          <span>Pagina {paginaActual} de {totalPaginas}</span>
+          {paginaActual < totalPaginas && (
+            <a href={urlPagina(paginaActual + 1)}>Siguiente</a>
+          )}
+        </div>
+      )}
 
       <a href="/cuenta">Mi cuenta</a>
     </main>
   );
 }
-
