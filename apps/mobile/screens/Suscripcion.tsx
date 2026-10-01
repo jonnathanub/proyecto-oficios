@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, Button, FlatList, StyleSheet } from "react-native";
 import { supabase } from "../lib/supabase";
 
@@ -70,14 +70,7 @@ export default function Suscripcion({ navigation }: any) {
     setProcesando(planId);
     setMensaje("");
 
-    const { error } = await supabase.from("subscriptions").insert({
-      professional_id: perfilId,
-      plan_id: planId,
-      status: "active",
-      start_date: new Date().toISOString(),
-      end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      simulated: true,
-    });
+    const { error } = await supabase.rpc("contratar_plan", { p_plan_id: planId });
 
     if (error) {
       setMensaje("No se pudo activar: " + error.message);
@@ -93,10 +86,10 @@ export default function Suscripcion({ navigation }: any) {
     if (!actual) return;
     setProcesando(actual.id);
 
-    await supabase
-      .from("subscriptions")
-      .update({ status: "cancelled" })
-      .eq("id", actual.id);
+    const { error } = await supabase.rpc("cancelar_suscripcion");
+    if (error) {
+      setMensaje("No se pudo cancelar: " + error.message);
+    }
 
     await cargar();
     setProcesando(null);
