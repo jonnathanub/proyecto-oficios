@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { View, Text, TextInput, Button, FlatList, StyleSheet } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { supabase } from "../lib/supabase";
+import FavoritoButton from "../components/FavoritoButton";
 
 type Categoria = { id: string; name: string };
 
@@ -121,6 +122,7 @@ export default function Profesionales({ navigation }: any) {
               {s.description ? <Text>{s.description}</Text> : null}
               {s.price_text ? <Text>Precio: {s.price_text}</Text> : null}
               <Text>Zona: {zona}</Text>
+              {p ? <FavoritoButton professionalId={p.id} /> : null}
               {p && p.review_count > 0 ? (
                 <Text>Calificacion: {p.avg_rating} ({p.review_count} resenas)</Text>
               ) : null}

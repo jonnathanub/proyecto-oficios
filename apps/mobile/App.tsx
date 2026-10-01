@@ -1,4 +1,4 @@
-import { NavigationContainer } from "@react-navigation/native";
+﻿import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Login from "./screens/Login";
 import Registro from "./screens/Registro";
@@ -8,6 +8,7 @@ import Solicitar from "./screens/Solicitar";
 import Solicitudes from "./screens/Solicitudes";
 import Resena from "./screens/Resena";
 import Perfil from "./screens/Perfil";
+import Favoritos from "./screens/Favoritos";
 
 const Stack = createNativeStackNavigator();
 
@@ -23,6 +24,7 @@ export default function App() {
         <Stack.Screen name="Solicitudes" component={Solicitudes} options={{ title: "Mis solicitudes" }} />
         <Stack.Screen name="Resena" component={Resena} options={{ title: "Calificar servicio" }} />
         <Stack.Screen name="Perfil" component={Perfil} options={{ title: "Mi perfil profesional" }} />
+        <Stack.Screen name="Favoritos" component={Favoritos} options={{ title: "Mis favoritos" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

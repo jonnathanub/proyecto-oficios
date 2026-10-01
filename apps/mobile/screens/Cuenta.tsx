@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
 import { supabase } from "../lib/supabase";
 
@@ -50,6 +50,12 @@ export default function Cuenta({ navigation }: any) {
       {rol === "professional" && (
         <Text style={styles.link} onPress={() => navigation.navigate("Perfil")}>
           Mi perfil profesional
+        </Text>
+      )}
+
+      {rol === "client" && (
+        <Text style={styles.link} onPress={() => navigation.navigate("Favoritos")}>
+          Mis favoritos
         </Text>
       )}
 
