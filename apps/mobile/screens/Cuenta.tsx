@@ -53,6 +53,12 @@ export default function Cuenta({ navigation }: any) {
         </Text>
       )}
 
+      {rol === "professional" && (
+        <Text style={styles.link} onPress={() => navigation.navigate("Suscripcion")}>
+          Mi suscripcion
+        </Text>
+      )}
+
       {rol === "client" && (
         <Text style={styles.link} onPress={() => navigation.navigate("Favoritos")}>
           Mis favoritos

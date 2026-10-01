@@ -9,6 +9,7 @@ import Solicitudes from "./screens/Solicitudes";
 import Resena from "./screens/Resena";
 import Perfil from "./screens/Perfil";
 import Favoritos from "./screens/Favoritos";
+import Suscripcion from "./screens/Suscripcion";
 
 const Stack = createNativeStackNavigator();
 
@@ -25,6 +26,7 @@ export default function App() {
         <Stack.Screen name="Resena" component={Resena} options={{ title: "Calificar servicio" }} />
         <Stack.Screen name="Perfil" component={Perfil} options={{ title: "Mi perfil profesional" }} />
         <Stack.Screen name="Favoritos" component={Favoritos} options={{ title: "Mis favoritos" }} />
+        <Stack.Screen name="Suscripcion" component={Suscripcion} options={{ title: "Mi suscripcion" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
