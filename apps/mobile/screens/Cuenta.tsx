@@ -47,6 +47,12 @@ export default function Cuenta({ navigation }: any) {
       <Text style={styles.titulo}>Conectado como {nombre}</Text>
       <Text>Rol: {rol === "professional" ? "Profesional" : "Cliente"}</Text>
 
+      {rol === "professional" && (
+        <Text style={styles.link} onPress={() => navigation.navigate("Perfil")}>
+          Mi perfil profesional
+        </Text>
+      )}
+
       <Text style={styles.link} onPress={() => navigation.navigate("Solicitudes")}>
         Mis solicitudes
       </Text>

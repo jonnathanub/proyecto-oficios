@@ -7,6 +7,7 @@ import Profesionales from "./screens/Profesionales";
 import Solicitar from "./screens/Solicitar";
 import Solicitudes from "./screens/Solicitudes";
 import Resena from "./screens/Resena";
+import Perfil from "./screens/Perfil";
 
 const Stack = createNativeStackNavigator();
 
@@ -21,6 +22,7 @@ export default function App() {
         <Stack.Screen name="Solicitar" component={Solicitar} options={{ title: "Solicitar servicio" }} />
         <Stack.Screen name="Solicitudes" component={Solicitudes} options={{ title: "Mis solicitudes" }} />
         <Stack.Screen name="Resena" component={Resena} options={{ title: "Calificar servicio" }} />
+        <Stack.Screen name="Perfil" component={Perfil} options={{ title: "Mi perfil profesional" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
