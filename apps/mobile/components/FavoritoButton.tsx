@@ -1,7 +1,8 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
+import { colors, spacing, radius, font } from "../theme";
 
 export default function FavoritoButton({ professionalId }: { professionalId: string }) {
   const navigation = useNavigation<any>();
@@ -71,16 +72,35 @@ export default function FavoritoButton({ professionalId }: { professionalId: str
   }
 
   return (
-    <TouchableOpacity onPress={alternarFavorito} disabled={actualizando} style={styles.boton}>
-      <Text style={styles.texto}>
-        {actualizando ? "Guardando..." : esFavorito ? "Quitar de favoritos" : "Agregar a favoritos"}
+    <TouchableOpacity
+      onPress={alternarFavorito}
+      disabled={actualizando}
+      activeOpacity={0.7}
+      style={[styles.boton, esFavorito && styles.botonActivo, actualizando && { opacity: 0.6 }]}
+    >
+      <Text style={[styles.texto, esFavorito && styles.textoActivo]}>
+        {actualizando
+          ? "Guardando..."
+          : esFavorito
+          ? "♥ Quitar de favoritos"
+          : "♡ Agregar a favoritos"}
       </Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  cargando: { fontSize: 12, opacity: 0.6, marginTop: 4 },
-  boton: { borderWidth: 1, borderColor: "#888", borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10, alignSelf: "flex-start", marginTop: 4 },
-  texto: { fontSize: 13 },
+  cargando: { fontSize: font.small, color: colors.textMuted },
+  boton: {
+    alignSelf: "flex-start",
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.white,
+  },
+  botonActivo: { borderColor: colors.danger, backgroundColor: "#FEE2E2" },
+  texto: { fontSize: font.small, fontWeight: "600", color: colors.primary },
+  textoActivo: { color: colors.danger },
 });
