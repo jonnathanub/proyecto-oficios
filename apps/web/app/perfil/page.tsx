@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -37,7 +37,7 @@ export default function Perfil() {
 
       const { data: u } = await supabase
         .from("users")
-        .select("role, phone, state, municipality, neighborhood")
+        .select("role, state, municipality, neighborhood")
         .eq("id", user.id)
         .single();
 
@@ -46,7 +46,8 @@ export default function Perfil() {
         setCargando(false);
         return;
       }
-      setTelefono(u.phone ?? "");
+      const { data: contacto } = await supabase.rpc("mi_contacto");
+      setTelefono(contacto?.[0]?.telefono ?? "");
       setEstado(u.state ?? "");
       setMunicipio(u.municipality ?? "");
       setColonia(u.neighborhood ?? "");

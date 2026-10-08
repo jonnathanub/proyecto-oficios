@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -42,7 +42,7 @@ export default function Cuenta() {
   return (
     <main style={{ maxWidth: 400, margin: "40px auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
       <h1>Conectado como {nombre}</h1>
-      <p>Rol: {rol === "professional" ? "Profesional" : "Cliente"}</p>
+      <p>Rol: {rol === "professional" ? "Profesional" : rol === "admin" ? "Administrador" : "Cliente"}</p>
       <a href="/solicitudes">Mis solicitudes</a><a href="/profesionales">Buscar profesionales</a><button onClick={cerrarSesion}>Cerrar sesión</button>
     </main>
   );

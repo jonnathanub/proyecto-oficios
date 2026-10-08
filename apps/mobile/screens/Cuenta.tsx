@@ -71,7 +71,7 @@ export default function Cuenta({ navigation }: any) {
         </View>
         <Text style={styles.nombre}>{nombre}</Text>
         <View style={styles.etiqueta}>
-          <Text style={styles.etiquetaTexto}>{esPro ? "Profesional" : "Cliente"}</Text>
+          <Text style={styles.etiquetaTexto}>{esPro ? "Profesional" : rol === "admin" ? "Administrador" : "Cliente"}</Text>
         </View>
       </View>
 

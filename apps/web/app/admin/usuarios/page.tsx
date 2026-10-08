@@ -28,11 +28,14 @@ export default function AdminUsuarios() {
 
     const { data, count } = await supabase
       .from("users")
-      .select("id, email, full_name, role, suspended, created_at", { count: "exact" })
+      .select("id, full_name, role, suspended, created_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(desde, hasta);
 
-    setUsuarios((data ?? []) as Usuario[]);
+    const lista = (data ?? []) as Omit<Usuario, "email">[];
+    const { data: correos } = await supabase.rpc("admin_emails", { p_ids: lista.map((x) => x.id) });
+    const mapaCorreos = Object.fromEntries(((correos ?? []) as { id: string; correo: string }[]).map((c) => [c.id, c.correo]));
+    setUsuarios(lista.map((x) => ({ ...x, email: mapaCorreos[x.id] ?? "" })));
     setTotal(count ?? 0);
     setCargando(false);
   }
