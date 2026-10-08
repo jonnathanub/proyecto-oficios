@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { View, Text, Button, FlatList, StyleSheet } from "react-native";
+import { View, Text, FlatList, StyleSheet } from "react-native";
 import { supabase } from "../lib/supabase";
+import { colors, spacing, radius, font, shadow } from "../theme";
+import Boton from "../components/Boton";
 
 type Solicitud = {
   id: string;
@@ -21,6 +23,15 @@ const ESTADOS: Record<string, string> = {
   in_progress: "En proceso",
   completed: "Completada",
   cancelled: "Cancelada",
+};
+
+const COLOR_ESTADO: Record<string, { fondo: string; texto: string }> = {
+  pending: { fondo: "#FEF3C7", texto: "#92400E" },
+  contacted: { fondo: "#DBEAFE", texto: "#1E3A8A" },
+  accepted: { fondo: "#D1FAE5", texto: "#065F46" },
+  in_progress: { fondo: "#E0E7FF", texto: "#3730A3" },
+  completed: { fondo: "#D1FAE5", texto: "#065F46" },
+  cancelled: { fondo: "#FEE2E2", texto: "#991B1B" },
 };
 
 const SIGUIENTES_ESTADOS: Record<string, { status: string; label: string }[]> = {
@@ -83,7 +94,7 @@ export default function Solicitudes({ navigation }: any) {
         .maybeSingle();
 
       if (!p) {
-        setMensaje("Tu perfil profesional todavia no existe.");
+        setMensaje("Tu perfil profesional todavía no existe.");
         setCargando(false);
         return;
       }
@@ -92,7 +103,7 @@ export default function Solicitudes({ navigation }: any) {
     } else if (miRol === "client") {
       consulta = consulta.eq("client_id", user.id);
     } else {
-      setMensaje("Esta seccion es para clientes y profesionales.");
+      setMensaje("Esta sección es para clientes y profesionales.");
       setCargando(false);
       return;
     }
@@ -177,8 +188,8 @@ export default function Solicitudes({ navigation }: any) {
 
   if (cargando) {
     return (
-      <View style={styles.container}>
-        <Text>Cargando...</Text>
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: colors.textMuted }}>Cargando...</Text>
       </View>
     );
   }
@@ -189,64 +200,85 @@ export default function Solicitudes({ navigation }: any) {
         {rol === "professional" ? "Solicitudes recibidas" : "Mis solicitudes"}
       </Text>
 
-      {mensaje ? <Text>{mensaje}</Text> : null}
+      {mensaje ? (
+        <View style={styles.mensajeCaja}>
+          <Text style={styles.mensajeTexto}>{mensaje}</Text>
+        </View>
+      ) : null}
 
       <FlatList
         data={filas}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={!mensaje ? <Text>Todavia no hay solicitudes.</Text> : null}
+        contentContainerStyle={{ paddingBottom: spacing.md }}
+        ListEmptyComponent={
+          !mensaje ? <Text style={styles.vacio}>Todavía no hay solicitudes.</Text> : null
+        }
         renderItem={({ item: f }) => {
           const acciones = SIGUIENTES_ESTADOS[f.status];
+          const color = COLOR_ESTADO[f.status] ?? { fondo: colors.border, texto: colors.text };
           return (
             <View style={styles.tarjeta}>
-              <Text style={styles.tituloTarjeta}>
-                {f.service_id ? titulos[f.service_id] ?? "Servicio" : "Servicio"}
-              </Text>
+              <View style={styles.filaSuperior}>
+                <Text style={styles.tituloTarjeta}>
+                  {f.service_id ? titulos[f.service_id] ?? "Servicio" : "Servicio"}
+                </Text>
+                <View style={[styles.estado, { backgroundColor: color.fondo }]}>
+                  <Text style={[styles.estadoTexto, { color: color.texto }]}>
+                    {ESTADOS[f.status] ?? f.status}
+                  </Text>
+                </View>
+              </View>
 
               {rol === "professional" ? (
-                <Text>Cliente: {nombres[f.client_id] ?? "Sin nombre"}</Text>
+                <Text style={styles.persona}>Cliente: {nombres[f.client_id] ?? "Sin nombre"}</Text>
               ) : (
-                <Text>Profesional: {nombres[f.professional_id] ?? "Sin nombre"}</Text>
+                <Text style={styles.persona}>Profesional: {nombres[f.professional_id] ?? "Sin nombre"}</Text>
               )}
 
-              {f.description ? <Text>{f.description}</Text> : null}
-              {f.desired_date ? <Text>Fecha deseada: {f.desired_date}</Text> : null}
-              {f.budget != null ? <Text>Presupuesto: ${f.budget} MXN</Text> : null}
+              {f.description ? <Text style={styles.descripcion}>{f.description}</Text> : null}
+              {f.desired_date ? <Text style={styles.dato}>Fecha deseada: {f.desired_date}</Text> : null}
+              {f.budget != null ? <Text style={styles.presupuesto}>Presupuesto: ${f.budget} MXN</Text> : null}
 
-              <Text style={styles.estado}>Estado: {ESTADOS[f.status] ?? f.status}</Text>
-              <Text>Enviada: {new Date(f.created_at).toLocaleDateString("es-MX")}</Text>
+              <Text style={styles.dato}>
+                Enviada: {new Date(f.created_at).toLocaleDateString("es-MX")}
+              </Text>
 
               {rol === "professional" && acciones && f.status !== "completed" && f.status !== "cancelled" && (
-                <View style={{ gap: 6, marginTop: 6 }}>
+                <View style={styles.acciones}>
                   {acciones.map((accion) => (
-                    <Button
+                    <Boton
                       key={accion.status}
-                      title={actualizando === f.id ? "Actualizando..." : accion.label}
+                      titulo={actualizando === f.id ? "Actualizando..." : accion.label}
+                      tipo={accion.status === "cancelled" ? "peligro" : "primario"}
                       onPress={() => cambiarEstado(f.id, accion.status)}
-                      disabled={actualizando === f.id}
+                      deshabilitado={actualizando === f.id}
                     />
                   ))}
                 </View>
               )}
 
               {rol === "client" && f.status === "pending" && (
-                <Button
-                  title={actualizando === f.id ? "Cancelando..." : "Cancelar solicitud"}
-                  onPress={() => cambiarEstado(f.id, "cancelled")}
-                  disabled={actualizando === f.id}
-                />
+                <View style={styles.acciones}>
+                  <Boton
+                    titulo={actualizando === f.id ? "Cancelando..." : "Cancelar solicitud"}
+                    tipo="peligro"
+                    onPress={() => cambiarEstado(f.id, "cancelled")}
+                    deshabilitado={actualizando === f.id}
+                  />
+                </View>
               )}
 
               {rol === "client" && f.status === "completed" && (
                 reseniadas.has(f.id) ? (
-                  <Text>Ya calificaste este servicio</Text>
+                  <Text style={styles.calificado}>✓ Ya calificaste este servicio</Text>
                 ) : (
-                  <Text
-                    style={styles.link}
-                    onPress={() => navigation.navigate("Resena", { solicitudId: f.id })}
-                  >
-                    Calificar este servicio
-                  </Text>
+                  <View style={styles.acciones}>
+                    <Boton
+                      titulo="Calificar este servicio"
+                      tipo="secundario"
+                      onPress={() => navigation.navigate("Resena", { solicitudId: f.id })}
+                    />
+                  </View>
                 )
               )}
             </View>
@@ -254,21 +286,61 @@ export default function Solicitudes({ navigation }: any) {
         }}
       />
 
-      <Text style={styles.link} onPress={() => navigation.navigate("Profesionales")}>
-        Buscar profesionales
-      </Text>
-      <Text style={styles.link} onPress={() => navigation.navigate("Cuenta")}>
-        Volver a mi cuenta
-      </Text>
+      <View style={styles.pie}>
+        <Text style={styles.link} onPress={() => navigation.navigate("Profesionales")}>
+          Buscar profesionales
+        </Text>
+        <Text style={styles.link} onPress={() => navigation.navigate("Cuenta")}>
+          Volver a mi cuenta
+        </Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 60, paddingHorizontal: 16 },
-  titulo: { fontSize: 22, fontWeight: "bold", marginBottom: 10 },
-  tarjeta: { borderWidth: 1, borderColor: "#666", borderRadius: 8, padding: 12, marginBottom: 10, gap: 4 },
-  tituloTarjeta: { fontWeight: "bold" },
-  estado: { fontWeight: "bold" },
-  link: { color: "#0066cc", marginTop: 10 },
+  container: {
+    flex: 1,
+    paddingTop: 60,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.background,
+  },
+  titulo: { fontSize: font.title, fontWeight: "bold", color: colors.text, marginBottom: spacing.md },
+  mensajeCaja: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: radius.sm,
+    padding: spacing.sm + 4,
+    marginBottom: spacing.md,
+  },
+  mensajeTexto: { color: colors.danger, fontSize: font.small },
+  vacio: { color: colors.textMuted, textAlign: "center", marginTop: spacing.lg },
+  tarjeta: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.xs + 2,
+    ...shadow,
+  },
+  filaSuperior: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+  },
+  tituloTarjeta: { flex: 1, fontSize: 18, fontWeight: "bold", color: colors.text },
+  estado: {
+    paddingHorizontal: spacing.sm + 4,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  estadoTexto: { fontSize: font.small, fontWeight: "700" },
+  persona: { fontSize: font.body, color: colors.textMuted },
+  descripcion: { fontSize: font.body, color: colors.text },
+  dato: { fontSize: font.small, color: colors.textMuted },
+  presupuesto: { fontSize: font.body, fontWeight: "700", color: colors.primary },
+  acciones: { gap: spacing.sm, marginTop: spacing.sm },
+  calificado: { fontSize: font.small, color: "#065F46", fontWeight: "600", marginTop: spacing.sm },
+  pie: { paddingVertical: spacing.md, gap: spacing.sm + 4 },
+  link: { color: colors.primary, textAlign: "center", fontSize: font.body, fontWeight: "600" },
 });
