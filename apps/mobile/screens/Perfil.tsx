@@ -1,6 +1,9 @@
-﻿import { useEffect, useState } from "react";
-import { View, Text, TextInput, Button, ScrollView, Switch, StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Text, ScrollView, Switch, StyleSheet } from "react-native";
 import { supabase } from "../lib/supabase";
+import { colors, spacing, radius, font, shadow } from "../theme";
+import Boton from "../components/Boton";
+import Campo from "../components/Campo";
 
 type Categoria = { id: string; name: string };
 
@@ -55,7 +58,7 @@ export default function Perfil({ navigation }: any) {
         .maybeSingle();
 
       if (!p) {
-        setMensaje("Tu perfil profesional todavia no existe.");
+        setMensaje("Tu perfil profesional todavía no existe.");
         setCargando(false);
         return;
       }
@@ -111,7 +114,7 @@ export default function Perfil({ navigation }: any) {
       })
       .eq("id", userId)
       .select("id");
-    if (r1.error || !r1.data?.length) return fallo("contacto y ubicacion", r1.error?.message);
+    if (r1.error || !r1.data?.length) return fallo("contacto y ubicación", r1.error?.message);
 
     const r2 = await supabase
       .from("professional_profiles")
@@ -145,22 +148,28 @@ export default function Perfil({ navigation }: any) {
 
     setOriginal(seleccion);
     setGuardando(false);
-    setMensaje("Perfil guardado!");
+    setMensaje("¡Perfil guardado!");
   }
+
+  const esOk = mensaje.startsWith("¡Perfil guardado");
 
   if (cargando) {
     return (
-      <View style={styles.container}>
-        <Text>Cargando...</Text>
+      <View style={[styles.contenedorFijo, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: colors.textMuted }}>Cargando...</Text>
       </View>
     );
   }
 
   if (!esProfesional) {
     return (
-      <View style={styles.container}>
+      <View style={styles.contenedorFijo}>
         <Text style={styles.titulo}>Mi perfil profesional</Text>
-        <Text>Esta seccion es solo para cuentas de tipo Profesional.</Text>
+        <View style={styles.tarjeta}>
+          <Text style={styles.texto}>
+            Esta sección es solo para cuentas de tipo Profesional.
+          </Text>
+        </View>
         <Text style={styles.link} onPress={() => navigation.navigate("Cuenta")}>
           Volver a mi cuenta
         </Text>
@@ -170,56 +179,82 @@ export default function Perfil({ navigation }: any) {
 
   if (!perfilId) {
     return (
-      <View style={styles.container}>
+      <View style={styles.contenedorFijo}>
         <Text style={styles.titulo}>Mi perfil profesional</Text>
-        <Text>{mensaje}</Text>
+        <View style={styles.tarjeta}>
+          <Text style={styles.texto}>{mensaje}</Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.titulo}>Mi perfil profesional</Text>
 
-      <Text style={styles.seccion}>Contacto y ubicacion</Text>
-      <TextInput style={styles.input} placeholder="Telefono" value={telefono} onChangeText={setTelefono} />
-      <TextInput style={styles.input} placeholder="Estado" value={estado} onChangeText={setEstado} />
-      <TextInput style={styles.input} placeholder="Municipio" value={municipio} onChangeText={setMunicipio} />
-      <TextInput style={styles.input} placeholder="Colonia" value={colonia} onChangeText={setColonia} />
+      <View style={styles.tarjeta}>
+        <Text style={styles.seccion}>Contacto y ubicación</Text>
+        <Campo placeholder="Teléfono" keyboardType="phone-pad" value={telefono} onChangeText={setTelefono} />
+        <Campo placeholder="Estado" value={estado} onChangeText={setEstado} />
+        <Campo placeholder="Municipio" value={municipio} onChangeText={setMunicipio} />
+        <Campo placeholder="Colonia" value={colonia} onChangeText={setColonia} />
+      </View>
 
-      <Text style={styles.seccion}>Sobre mi</Text>
-      <TextInput
-        style={[styles.input, { height: 90, textAlignVertical: "top" }]}
-        placeholder="Describe tu experiencia"
-        multiline
-        value={bio}
-        onChangeText={setBio}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Anos de experiencia"
-        keyboardType="numeric"
-        value={anios}
-        onChangeText={setAnios}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Horario de atencion"
-        value={horario}
-        onChangeText={setHorario}
-      />
+      <View style={styles.tarjeta}>
+        <Text style={styles.seccion}>Sobre mí</Text>
+        <Campo
+          style={{ height: 100, textAlignVertical: "top" }}
+          placeholder="Describe tu experiencia"
+          multiline
+          value={bio}
+          onChangeText={setBio}
+        />
+        <Campo
+          placeholder="Años de experiencia"
+          keyboardType="numeric"
+          value={anios}
+          onChangeText={setAnios}
+        />
+        <Campo
+          placeholder="Horario de atención"
+          value={horario}
+          onChangeText={setHorario}
+        />
+      </View>
 
-      <Text style={styles.seccion}>Mis oficios</Text>
-      {categorias.map((c) => (
-        <View key={c.id} style={styles.filaOficio}>
-          <Switch value={seleccion.includes(c.id)} onValueChange={() => alternar(c.id)} />
-          <Text>{c.name}</Text>
+      <View style={styles.tarjeta}>
+        <Text style={styles.seccion}>Mis oficios</Text>
+        {categorias.map((c, i) => (
+          <View
+            key={c.id}
+            style={[styles.filaOficio, i < categorias.length - 1 && styles.filaBorde]}
+          >
+            <Text style={styles.oficioTexto}>{c.name}</Text>
+            <Switch
+              value={seleccion.includes(c.id)}
+              onValueChange={() => alternar(c.id)}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.white}
+            />
+          </View>
+        ))}
+      </View>
+
+      {mensaje ? (
+        <View style={[styles.mensajeCaja, esOk && styles.mensajeOk]}>
+          <Text style={[styles.mensajeTexto, esOk && { color: "#065F46" }]}>{mensaje}</Text>
         </View>
-      ))}
+      ) : null}
 
-      <Button title={guardando ? "Guardando..." : "Guardar perfil"} onPress={guardar} disabled={guardando} />
-
-      {mensaje ? <Text style={styles.mensaje}>{mensaje}</Text> : null}
+      <Boton
+        titulo={guardando ? "Guardando..." : "Guardar perfil"}
+        onPress={guardar}
+        deshabilitado={guardando}
+      />
 
       <Text style={styles.link} onPress={() => navigation.navigate("Cuenta")}>
         Volver a mi cuenta
@@ -229,11 +264,45 @@ export default function Perfil({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
-  titulo: { fontSize: 22, fontWeight: "bold", marginBottom: 6 },
-  seccion: { fontSize: 16, fontWeight: "bold", marginTop: 10 },
-  input: { borderWidth: 1, borderColor: "#888", borderRadius: 8, padding: 10 },
-  filaOficio: { flexDirection: "row", alignItems: "center", gap: 10 },
-  mensaje: { marginTop: 6 },
-  link: { color: "#0066cc", marginTop: 14 },
+  contenedorFijo: {
+    flex: 1,
+    paddingTop: 60,
+    paddingHorizontal: spacing.md,
+    gap: spacing.md,
+    backgroundColor: colors.background,
+  },
+  container: {
+    paddingTop: 60,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xl + 8,
+    gap: spacing.md,
+  },
+  titulo: { fontSize: font.title, fontWeight: "bold", color: colors.text },
+  texto: { fontSize: font.body, color: colors.text },
+  tarjeta: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: spacing.sm + 4,
+    ...shadow,
+  },
+  seccion: { fontSize: font.body, fontWeight: "bold", color: colors.primaryDark },
+  filaOficio: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: spacing.xs,
+  },
+  filaBorde: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: spacing.sm },
+  oficioTexto: { fontSize: font.body, color: colors.text },
+  mensajeCaja: { backgroundColor: "#FEE2E2", borderRadius: radius.sm, padding: spacing.sm + 4 },
+  mensajeOk: { backgroundColor: "#D1FAE5" },
+  mensajeTexto: { color: colors.danger, fontSize: font.small },
+  link: {
+    color: colors.primary,
+    textAlign: "center",
+    fontSize: font.body,
+    fontWeight: "600",
+    marginTop: spacing.sm,
+  },
 });

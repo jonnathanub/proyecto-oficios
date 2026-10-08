@@ -1,0 +1,60 @@
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.titulo}>Mi perfil profesional</Text>
+
+      <Text style={styles.seccion}>Contacto y ubicacion</Text>
+      <TextInput style={styles.input} placeholder="Telefono" value={telefono} onChangeText={setTelefono} />
+      <TextInput style={styles.input} placeholder="Estado" value={estado} onChangeText={setEstado} />
+      <TextInput style={styles.input} placeholder="Municipio" value={municipio} onChangeText={setMunicipio} />
+      <TextInput style={styles.input} placeholder="Colonia" value={colonia} onChangeText={setColonia} />
+
+      <Text style={styles.seccion}>Sobre mi</Text>
+      <TextInput
+        style={[styles.input, { height: 90, textAlignVertical: "top" }]}
+        placeholder="Describe tu experiencia"
+        multiline
+        value={bio}
+        onChangeText={setBio}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Anos de experiencia"
+        keyboardType="numeric"
+        value={anios}
+        onChangeText={setAnios}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Horario de atencion"
+        value={horario}
+        onChangeText={setHorario}
+      />
+
+      <Text style={styles.seccion}>Mis oficios</Text>
+      {categorias.map((c) => (
+        <View key={c.id} style={styles.filaOficio}>
+          <Switch value={seleccion.includes(c.id)} onValueChange={() => alternar(c.id)} />
+          <Text>{c.name}</Text>
+        </View>
+      ))}
+
+      <Button title={guardando ? "Guardando..." : "Guardar perfil"} onPress={guardar} disabled={guardando} />
+
+      {mensaje ? <Text style={styles.mensaje}>{mensaje}</Text> : null}
+
+      <Text style={styles.link} onPress={() => navigation.navigate("Cuenta")}>
+        Volver a mi cuenta
+      </Text>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
+  titulo: { fontSize: 22, fontWeight: "bold", marginBottom: 6 },
+  seccion: { fontSize: 16, fontWeight: "bold", marginTop: 10 },
+  input: { borderWidth: 1, borderColor: "#888", borderRadius: 8, padding: 10 },
+  filaOficio: { flexDirection: "row", alignItems: "center", gap: 10 },
+  mensaje: { marginTop: 6 },
+  link: { color: "#0066cc", marginTop: 14 },
+});
