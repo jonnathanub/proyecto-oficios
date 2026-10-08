@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { View, Text, Button, FlatList, StyleSheet } from "react-native";
+import { View, Text, FlatList, StyleSheet } from "react-native";
 import { supabase } from "../lib/supabase";
+import { colors, spacing, radius, font, shadow } from "../theme";
+import Boton from "../components/Boton";
 
 type Plan = {
   id: string;
@@ -38,7 +40,7 @@ export default function Suscripcion({ navigation }: any) {
       .maybeSingle();
 
     if (!p) {
-      setMensaje("Esta seccion es solo para cuentas de tipo Profesional.");
+      setMensaje("Esta sección es solo para cuentas de tipo Profesional.");
       setCargando(false);
       return;
     }
@@ -97,8 +99,8 @@ export default function Suscripcion({ navigation }: any) {
 
   if (cargando) {
     return (
-      <View style={styles.container}>
-        <Text>Cargando...</Text>
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: colors.textMuted }}>Cargando...</Text>
       </View>
     );
   }
@@ -106,8 +108,10 @@ export default function Suscripcion({ navigation }: any) {
   if (mensaje && !perfilId) {
     return (
       <View style={styles.container}>
-        <Text style={styles.titulo}>Suscripcion</Text>
-        <Text>{mensaje}</Text>
+        <Text style={styles.titulo}>Suscripción</Text>
+        <View style={styles.tarjeta}>
+          <Text style={styles.texto}>{mensaje}</Text>
+        </View>
         <Text style={styles.link} onPress={() => navigation.navigate("Cuenta")}>
           Volver a mi cuenta
         </Text>
@@ -117,42 +121,54 @@ export default function Suscripcion({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Mi suscripcion</Text>
-      <Text style={styles.nota}>
-        Los pagos son simulados por ahora, no se realiza ningun cobro real.
-      </Text>
+      <Text style={styles.titulo}>Mi suscripción</Text>
+
+      <View style={styles.aviso}>
+        <Text style={styles.avisoTexto}>
+          Los pagos son simulados por ahora, no se realiza ningún cobro real.
+        </Text>
+      </View>
 
       {actual ? (
-        <View style={styles.tarjeta}>
-          <Text>
+        <View style={[styles.tarjeta, styles.tarjetaActiva]}>
+          <Text style={styles.activaTitulo}>✓ Plan activo</Text>
+          <Text style={styles.texto}>
             Tienes un plan activo hasta{" "}
             {actual.end_date ? new Date(actual.end_date).toLocaleDateString("es-MX") : "-"}.
           </Text>
-          <Button
-            title={procesando === actual.id ? "Cancelando..." : "Cancelar suscripcion"}
+          <Boton
+            titulo={procesando === actual.id ? "Cancelando..." : "Cancelar suscripción"}
+            tipo="peligro"
             onPress={cancelar}
-            disabled={procesando === actual.id}
+            deshabilitado={procesando === actual.id}
           />
         </View>
       ) : (
-        <Text>No tienes un plan activo. Tu perfil aparece en orden normal en las busquedas.</Text>
+        <Text style={styles.textoSuave}>
+          No tienes un plan activo. Tu perfil aparece en orden normal en las búsquedas.
+        </Text>
       )}
 
       {!actual && (
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.seccion}>Planes disponibles</Text>
-          {planes.length === 0 && <Text>Todavia no hay planes configurados.</Text>}
+          {planes.length === 0 && (
+            <Text style={styles.textoSuave}>Todavía no hay planes configurados.</Text>
+          )}
           <FlatList
             data={planes}
             keyExtractor={(item) => item.id}
             renderItem={({ item: p }) => (
               <View style={styles.tarjeta}>
                 <Text style={styles.tituloTarjeta}>{p.name}</Text>
-                <Text>${p.price} MXN / mes (simulado)</Text>
-                <Button
-                  title={procesando === p.id ? "Activando..." : "Contratar"}
+                <Text style={styles.precio}>
+                  ${p.price} <Text style={styles.precioUnidad}>MXN / mes</Text>
+                </Text>
+                <Text style={styles.simulado}>(simulado)</Text>
+                <Boton
+                  titulo={procesando === p.id ? "Activando..." : "Contratar"}
                   onPress={() => contratar(p.id)}
-                  disabled={procesando === p.id}
+                  deshabilitado={procesando === p.id}
                 />
               </View>
             )}
@@ -160,7 +176,11 @@ export default function Suscripcion({ navigation }: any) {
         </View>
       )}
 
-      {mensaje ? <Text>{mensaje}</Text> : null}
+      {mensaje ? (
+        <View style={styles.errorCaja}>
+          <Text style={styles.errorTexto}>{mensaje}</Text>
+        </View>
+      ) : null}
 
       <Text style={styles.link} onPress={() => navigation.navigate("Cuenta")}>
         Volver a mi cuenta
@@ -170,11 +190,49 @@ export default function Suscripcion({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 60, paddingHorizontal: 16, gap: 10 },
-  titulo: { fontSize: 22, fontWeight: "bold", marginBottom: 6 },
-  nota: { fontSize: 13, opacity: 0.75 },
-  seccion: { fontSize: 16, fontWeight: "bold", marginTop: 10, marginBottom: 6 },
-  tarjeta: { borderWidth: 1, borderColor: "#666", borderRadius: 8, padding: 12, marginBottom: 10, gap: 6 },
-  tituloTarjeta: { fontWeight: "bold" },
-  link: { color: "#0066cc", marginTop: 10 },
+  container: {
+    flex: 1,
+    paddingTop: 60,
+    paddingHorizontal: spacing.md,
+    gap: spacing.md,
+    backgroundColor: colors.background,
+  },
+  titulo: { fontSize: font.title, fontWeight: "bold", color: colors.text },
+  texto: { fontSize: font.body, color: colors.text },
+  textoSuave: { fontSize: font.body, color: colors.textMuted },
+  aviso: {
+    backgroundColor: "#FEF3C7",
+    borderRadius: radius.sm,
+    padding: spacing.sm + 4,
+  },
+  avisoTexto: { fontSize: font.small, color: "#92400E" },
+  seccion: {
+    fontSize: font.body,
+    fontWeight: "bold",
+    color: colors.primaryDark,
+    marginBottom: spacing.sm,
+  },
+  tarjeta: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.sm + 2,
+    ...shadow,
+  },
+  tarjetaActiva: { borderWidth: 1.5, borderColor: "#10B981" },
+  activaTitulo: { fontSize: 18, fontWeight: "bold", color: "#065F46" },
+  tituloTarjeta: { fontSize: 18, fontWeight: "bold", color: colors.text },
+  precio: { fontSize: font.big, fontWeight: "bold", color: colors.primary },
+  precioUnidad: { fontSize: font.small, fontWeight: "600", color: colors.textMuted },
+  simulado: { fontSize: font.small, color: colors.textMuted },
+  errorCaja: { backgroundColor: "#FEE2E2", borderRadius: radius.sm, padding: spacing.sm + 4 },
+  errorTexto: { color: colors.danger, fontSize: font.small },
+  link: {
+    color: colors.primary,
+    textAlign: "center",
+    fontSize: font.body,
+    fontWeight: "600",
+    paddingVertical: spacing.sm,
+  },
 });
