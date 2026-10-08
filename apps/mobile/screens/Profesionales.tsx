@@ -1,8 +1,11 @@
-﻿import { useEffect, useState } from "react";
-import { View, Text, TextInput, Button, FlatList, StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Text, FlatList, StyleSheet } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { supabase } from "../lib/supabase";
 import FavoritoButton from "../components/FavoritoButton";
+import { colors, spacing, radius, font, shadow } from "../theme";
+import Boton from "../components/Boton";
+import Campo from "../components/Campo";
 
 type Categoria = { id: string; name: string };
 
@@ -80,70 +83,89 @@ export default function Profesionales({ navigation }: any) {
 
   const hayMas = servicios.length < total;
 
-  return (
-    <View style={styles.container}>
+  const encabezado = (
+    <View>
       <Text style={styles.titulo}>Encuentra profesionales</Text>
 
-      <Picker selectedValue={categoria} onValueChange={setCategoria} style={styles.picker}>
-        <Picker.Item label="Todos los oficios" value="" />
-        {categorias.map((c) => (
-          <Picker.Item key={c.id} label={c.name} value={c.id} />
-        ))}
-      </Picker>
+      <View style={styles.filtros}>
+        <View style={styles.pickerCaja}>
+          <Picker selectedValue={categoria} onValueChange={setCategoria} style={styles.picker}>
+            <Picker.Item label="Todos los oficios" value="" />
+            {categorias.map((c) => (
+              <Picker.Item key={c.id} label={c.name} value={c.id} />
+            ))}
+          </Picker>
+        </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Municipio (ej. Toluca)"
-        value={municipio}
-        onChangeText={setMunicipio}
-      />
+        <Campo
+          placeholder="Municipio (ej. Toluca)"
+          value={municipio}
+          onChangeText={setMunicipio}
+        />
 
-      <Button title="Buscar" onPress={() => buscar(1, true)} />
+        <Boton titulo="Buscar" onPress={() => buscar(1, true)} />
+      </View>
 
-      {total > 0 && (
-        <Text style={styles.contador}>
-          {total} resultados
-        </Text>
-      )}
+      {total > 0 && <Text style={styles.contador}>{total} resultados</Text>}
+    </View>
+  );
 
+  return (
+    <View style={styles.container}>
       <FlatList
         data={servicios}
         keyExtractor={(item) => item.id}
-        style={{ marginTop: 10 }}
-        ListEmptyComponent={!cargando ? <Text>No encontramos servicios con esos filtros.</Text> : null}
+        ListHeaderComponent={encabezado}
+        contentContainerStyle={{ paddingBottom: spacing.xl }}
+        ListEmptyComponent={
+          !cargando ? (
+            <Text style={styles.vacio}>No encontramos servicios con esos filtros.</Text>
+          ) : null
+        }
         renderItem={({ item: s }) => {
           const p = s.professional_profiles;
           const zona = [s.neighborhood, s.municipality, s.state].filter(Boolean).join(", ") || "Sin zona";
           return (
             <View style={styles.tarjeta}>
+              <View style={styles.etiqueta}>
+                <Text style={styles.etiquetaTexto}>{nombreCategoria(s.category_id)}</Text>
+              </View>
+
               <Text style={styles.tituloTarjeta}>{s.title}</Text>
-              <Text>{nombreCategoria(s.category_id)}</Text>
-              <Text>Profesional: {p?.users?.full_name ?? "Sin nombre"}</Text>
-              {s.description ? <Text>{s.description}</Text> : null}
-              {s.price_text ? <Text>Precio: {s.price_text}</Text> : null}
-              <Text>Zona: {zona}</Text>
-              {p ? <FavoritoButton professionalId={p.id} /> : null}
+              <Text style={styles.profesional}>{p?.users?.full_name ?? "Sin nombre"}</Text>
+
+              {s.description ? <Text style={styles.descripcion}>{s.description}</Text> : null}
+
+              <View style={styles.datos}>
+                {s.price_text ? <Text style={styles.precio}>{s.price_text}</Text> : null}
+                <Text style={styles.zona}>📍 {zona}</Text>
+              </View>
+
               {p && p.review_count > 0 ? (
-                <Text>Calificacion: {p.avg_rating} ({p.review_count} resenas)</Text>
+                <Text style={styles.estrellas}>
+                  ★ {p.avg_rating} ({p.review_count} reseñas)
+                </Text>
               ) : null}
               {p && p.review_count === 0 ? (
-                <Text>Sin calificaciones todavia</Text>
+                <Text style={styles.sinCalif}>Sin calificaciones todavía</Text>
               ) : null}
-              <Text
-                style={styles.link}
+
+              {p ? <FavoritoButton professionalId={p.id} /> : null}
+
+              <Boton
+                titulo="Solicitar servicio"
                 onPress={() => navigation.navigate("Solicitar", { servicioId: s.id })}
-              >
-                Solicitar servicio
-              </Text>
+              />
             </View>
           );
         }}
         ListFooterComponent={
           hayMas ? (
-            <Button
-              title={cargando ? "Cargando..." : "Cargar mas"}
+            <Boton
+              titulo={cargando ? "Cargando..." : "Cargar más"}
+              tipo="secundario"
               onPress={() => buscar(pagina + 1, false)}
-              disabled={cargando}
+              deshabilitado={cargando}
             />
           ) : null
         }
@@ -153,12 +175,52 @@ export default function Profesionales({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 60, paddingHorizontal: 16 },
-  titulo: { fontSize: 22, fontWeight: "bold", marginBottom: 10 },
-  input: { borderWidth: 1, borderColor: "#888", borderRadius: 8, padding: 10, marginTop: 8 },
-  picker: { borderWidth: 1, borderColor: "#888", borderRadius: 8 },
-  contador: { fontSize: 12, opacity: 0.75, marginTop: 6 },
-  tarjeta: { borderWidth: 1, borderColor: "#666", borderRadius: 8, padding: 12, marginBottom: 10, gap: 2 },
-  tituloTarjeta: { fontWeight: "bold" },
-  link: { color: "#0066cc", marginTop: 6 },
+  container: {
+    flex: 1,
+    paddingTop: 60,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.background,
+  },
+  titulo: { fontSize: font.title, fontWeight: "bold", color: colors.text, marginBottom: spacing.md },
+  filtros: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: spacing.sm + 4,
+    ...shadow,
+  },
+  pickerCaja: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    overflow: "hidden",
+  },
+  picker: { color: colors.text },
+  contador: { fontSize: font.small, color: colors.textMuted, marginVertical: spacing.sm + 4 },
+  vacio: { color: colors.textMuted, textAlign: "center", marginTop: spacing.lg },
+  tarjeta: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+    ...shadow,
+  },
+  etiqueta: {
+    alignSelf: "flex-start",
+    backgroundColor: "#DBEAFE",
+    paddingHorizontal: spacing.sm + 4,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  etiquetaTexto: { color: colors.primaryDark, fontSize: font.small, fontWeight: "600" },
+  tituloTarjeta: { fontSize: 18, fontWeight: "bold", color: colors.text },
+  profesional: { fontSize: font.body, color: colors.textMuted },
+  descripcion: { fontSize: font.body, color: colors.text },
+  datos: { gap: spacing.xs },
+  precio: { fontSize: font.body, fontWeight: "700", color: colors.primary },
+  zona: { fontSize: font.small, color: colors.textMuted },
+  estrellas: { fontSize: font.small, color: "#B45309", fontWeight: "600" },
+  sinCalif: { fontSize: font.small, color: colors.textMuted },
 });

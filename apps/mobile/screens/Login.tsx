@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { supabase } from "../lib/supabase";
+import { colors, spacing, radius, font, shadow } from "../theme";
+import Boton from "../components/Boton";
+import Campo from "../components/Campo";
 
 export default function Login({ navigation }: any) {
   const [email, setEmail] = useState("");
@@ -25,28 +28,41 @@ export default function Login({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Iniciar sesion</Text>
+      <View style={styles.marca}>
+        <Text style={styles.logo}>Oficios</Text>
+        <Text style={styles.subtitulo}>Encuentra al profesional que necesitas</Text>
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Correo"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
+      <View style={styles.tarjeta}>
+        <Text style={styles.titulo}>Iniciar sesión</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Contrasena"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+        <Campo
+          placeholder="Correo"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
 
-      <Button title={cargando ? "Entrando..." : "Entrar"} onPress={entrar} disabled={cargando} />
+        <Campo
+          placeholder="Contraseña"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
 
-      {mensaje ? <Text style={styles.error}>{mensaje}</Text> : null}
+        {mensaje ? (
+          <View style={styles.errorCaja}>
+            <Text style={styles.errorTexto}>{mensaje}</Text>
+          </View>
+        ) : null}
+
+        <Boton
+          titulo={cargando ? "Entrando..." : "Entrar"}
+          onPress={entrar}
+          deshabilitado={cargando}
+        />
+      </View>
 
       <Text style={styles.link} onPress={() => navigation.navigate("Registro")}>
         No tengo cuenta, quiero registrarme
@@ -56,9 +72,34 @@ export default function Login({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", paddingHorizontal: 24, gap: 12 },
-  titulo: { fontSize: 24, fontWeight: "bold", marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: "#888", borderRadius: 8, padding: 12 },
-  error: { color: "red" },
-  link: { color: "#0066cc", marginTop: 16, textAlign: "center" },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.background,
+  },
+  marca: { alignItems: "center", marginBottom: spacing.lg },
+  logo: { fontSize: 36, fontWeight: "bold", color: colors.primary },
+  subtitulo: { fontSize: font.body, color: colors.textMuted, marginTop: spacing.xs },
+  tarjeta: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.md,
+    ...shadow,
+  },
+  titulo: { fontSize: font.title, fontWeight: "bold", color: colors.text },
+  errorCaja: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: radius.sm,
+    padding: spacing.sm + 4,
+  },
+  errorTexto: { color: colors.danger, fontSize: font.small },
+  link: {
+    color: colors.primary,
+    marginTop: spacing.lg,
+    textAlign: "center",
+    fontSize: font.body,
+    fontWeight: "600",
+  },
 });
