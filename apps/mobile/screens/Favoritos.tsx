@@ -1,6 +1,8 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet } from "react-native";
 import { supabase } from "../lib/supabase";
+import { colors, spacing, radius, font, shadow } from "../theme";
+import Boton from "../components/Boton";
 
 type Favorito = {
   id: string;
@@ -55,8 +57,8 @@ export default function Favoritos({ navigation }: any) {
 
   if (cargando) {
     return (
-      <View style={styles.container}>
-        <Text>Cargando...</Text>
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: colors.textMuted }}>Cargando...</Text>
       </View>
     );
   }
@@ -65,26 +67,51 @@ export default function Favoritos({ navigation }: any) {
     <View style={styles.container}>
       <Text style={styles.titulo}>Mis favoritos</Text>
 
-      {mensaje ? <Text>{mensaje}</Text> : null}
+      {mensaje ? (
+        <View style={styles.errorCaja}>
+          <Text style={styles.errorTexto}>{mensaje}</Text>
+        </View>
+      ) : null}
 
       <FlatList
         data={favoritos}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={!mensaje ? <Text>Todavia no tienes favoritos guardados.</Text> : null}
+        contentContainerStyle={{ paddingBottom: spacing.md }}
+        ListEmptyComponent={
+          !mensaje ? (
+            <Text style={styles.vacio}>Todavía no tienes favoritos guardados.</Text>
+          ) : null
+        }
         renderItem={({ item: f }) => {
           const p = f.professional_profiles;
+          const nombre = p?.users?.full_name ?? "Sin nombre";
           return (
             <View style={styles.tarjeta}>
-              <Text style={styles.tituloTarjeta}>{p?.users?.full_name ?? "Sin nombre"}</Text>
-              {p?.bio ? <Text>{p.bio}</Text> : null}
-              {p && p.review_count > 0 ? (
-                <Text>Calificacion: {p.avg_rating} ({p.review_count} resenas)</Text>
-              ) : (
-                <Text>Sin calificaciones todavia</Text>
-              )}
-              <Text style={styles.link} onPress={() => quitar(f.id)}>
-                Quitar de favoritos
-              </Text>
+              <View style={styles.encabezado}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarTexto}>
+                    {(nombre.trim()[0] ?? "?").toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.nombre}>{nombre}</Text>
+                  {p && p.review_count > 0 ? (
+                    <Text style={styles.estrellas}>
+                      ★ {p.avg_rating} ({p.review_count} reseñas)
+                    </Text>
+                  ) : (
+                    <Text style={styles.sinCalif}>Sin calificaciones todavía</Text>
+                  )}
+                </View>
+              </View>
+
+              {p?.bio ? <Text style={styles.bio}>{p.bio}</Text> : null}
+
+              <Boton
+                titulo="Quitar de favoritos"
+                tipo="secundario"
+                onPress={() => quitar(f.id)}
+              />
             </View>
           );
         }}
@@ -98,9 +125,48 @@ export default function Favoritos({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 60, paddingHorizontal: 16 },
-  titulo: { fontSize: 22, fontWeight: "bold", marginBottom: 10 },
-  tarjeta: { borderWidth: 1, borderColor: "#666", borderRadius: 8, padding: 12, marginBottom: 10, gap: 2 },
-  tituloTarjeta: { fontWeight: "bold" },
-  link: { color: "#0066cc", marginTop: 6 },
+  container: {
+    flex: 1,
+    paddingTop: 60,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.background,
+  },
+  titulo: { fontSize: font.title, fontWeight: "bold", color: colors.text, marginBottom: spacing.md },
+  errorCaja: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: radius.sm,
+    padding: spacing.sm + 4,
+    marginBottom: spacing.md,
+  },
+  errorTexto: { color: colors.danger, fontSize: font.small },
+  vacio: { color: colors.textMuted, textAlign: "center", marginTop: spacing.lg },
+  tarjeta: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.sm + 4,
+    ...shadow,
+  },
+  encabezado: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: "#DBEAFE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarTexto: { fontSize: font.title, fontWeight: "bold", color: colors.primary },
+  nombre: { fontSize: 18, fontWeight: "bold", color: colors.text },
+  estrellas: { fontSize: font.small, color: "#B45309", fontWeight: "600", marginTop: 2 },
+  sinCalif: { fontSize: font.small, color: colors.textMuted, marginTop: 2 },
+  bio: { fontSize: font.body, color: colors.text },
+  link: {
+    color: colors.primary,
+    textAlign: "center",
+    fontSize: font.body,
+    fontWeight: "600",
+    paddingVertical: spacing.md,
+  },
 });
