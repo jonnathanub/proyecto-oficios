@@ -63,6 +63,7 @@ export default function Solicitudes({ navigation }: any) {
   const [nombres, setNombres] = useState<Record<string, string>>({});
   const [actualizando, setActualizando] = useState<string | null>(null);
   const [reseniadas, setReseniadas] = useState<Set<string>>(new Set());
+  const [contactos, setContactos] = useState<Record<string, { telefono: string | null; correo: string | null }>>({});
 
   async function cargarSolicitudes() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -118,6 +119,17 @@ export default function Solicitudes({ navigation }: any) {
 
     const lista = (data ?? []) as Solicitud[];
     setFilas(lista);
+
+    const mapaContactos: Record<string, { telefono: string | null; correo: string | null }> = {};
+    await Promise.all(
+      lista.map(async (f) => {
+        const { data: c } = await supabase.rpc("ver_contacto", { p_request_id: f.id });
+        if (c && c.length > 0) {
+          mapaContactos[f.id] = { telefono: c[0].telefono, correo: c[0].correo };
+        }
+      })
+    );
+    setContactos(mapaContactos);
 
     const servIds = [...new Set(lista.map((f) => f.service_id).filter(Boolean))] as string[];
 
@@ -186,6 +198,21 @@ export default function Solicitudes({ navigation }: any) {
     setActualizando(null);
   }
 
+  async function desbloquear(id: string) {
+    setActualizando(id);
+    setMensaje("");
+
+    const { error } = await supabase.rpc("desbloquear_con_anuncio", { p_request_id: id });
+
+    if (error) {
+      setMensaje("No se pudo desbloquear: " + error.message);
+      setActualizando(null);
+      return;
+    }
+
+    await cargarSolicitudes();
+    setActualizando(null);
+  }
   if (cargando) {
     return (
       <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
@@ -243,6 +270,28 @@ export default function Solicitudes({ navigation }: any) {
                 Enviada: {new Date(f.created_at).toLocaleDateString("es-MX")}
               </Text>
 
+              {contactos[f.id] ? (
+                <View style={styles.contacto}>
+                  <Text style={styles.contactoTitulo}>Contacto</Text>
+                  <Text style={styles.contactoDato}>Teléfono: {contactos[f.id].telefono ?? "No registrado"}</Text>
+                  <Text style={styles.contactoDato}>Correo: {contactos[f.id].correo ?? "No registrado"}</Text>
+                </View>
+              ) : f.status !== "cancelled" ? (
+                <View style={styles.contacto}>
+                  <Text style={styles.contactoTitulo}>Contacto bloqueado</Text>
+                  <Text style={styles.contactoDato}>
+                    {rol === "professional"
+                      ? "Mira un anuncio o activa tu suscripción para ver el teléfono y el correo."
+                      : "Mira un anuncio para ver el teléfono y el correo."}
+                  </Text>
+                  <Boton
+                    titulo={actualizando === f.id ? "Desbloqueando..." : "Ver anuncio y desbloquear"}
+                    tipo="secundario"
+                    onPress={() => desbloquear(f.id)}
+                    deshabilitado={actualizando === f.id}
+                  />
+                </View>
+              ) : null}
               {rol === "professional" && acciones && f.status !== "completed" && f.status !== "cancelled" && (
                 <View style={styles.acciones}>
                   {acciones.map((accion) => (
@@ -340,6 +389,15 @@ const styles = StyleSheet.create({
   dato: { fontSize: font.small, color: colors.textMuted },
   presupuesto: { fontSize: font.body, fontWeight: "700", color: colors.primary },
   acciones: { gap: spacing.sm, marginTop: spacing.sm },
+  contacto: {
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
+    padding: spacing.sm + 4,
+    gap: spacing.xs + 2,
+    marginTop: spacing.sm,
+  },
+  contactoTitulo: { fontSize: font.small, fontWeight: "700", color: colors.primaryDark },
+  contactoDato: { fontSize: font.small, color: colors.text },
   calificado: { fontSize: font.small, color: "#065F46", fontWeight: "600", marginTop: spacing.sm },
   pie: { paddingVertical: spacing.md, gap: spacing.sm + 4 },
   link: { color: colors.primary, textAlign: "center", fontSize: font.body, fontWeight: "600" },
