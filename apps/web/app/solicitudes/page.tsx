@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -55,6 +55,7 @@ export default function Solicitudes() {
   const [nombres, setNombres] = useState<Record<string, string>>({});
   const [actualizando, setActualizando] = useState<string | null>(null);
   const [reseniadas, setReseniadas] = useState<Set<string>>(new Set()); // NUEVO
+  const [contactos, setContactos] = useState<Record<string, { telefono: string | null; correo: string | null }>>({});
 
   async function cargarSolicitudes() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -112,6 +113,17 @@ export default function Solicitudes() {
 
     const lista = (data ?? []) as Solicitud[];
     setFilas(lista);
+
+    const mapaContactos: Record<string, { telefono: string | null; correo: string | null }> = {};
+    await Promise.all(
+      lista.map(async (f) => {
+        const { data: c } = await supabase.rpc("ver_contacto", { p_request_id: f.id });
+        if (c && c.length > 0) {
+          mapaContactos[f.id] = { telefono: c[0].telefono, correo: c[0].correo };
+        }
+      })
+    );
+    setContactos(mapaContactos);
 
     const servIds = [
       ...new Set(lista.map((f) => f.service_id).filter(Boolean)),
@@ -234,6 +246,21 @@ export default function Solicitudes() {
     setActualizando(null);
   }
 
+  async function desbloquear(id: string) {
+    setActualizando(id);
+    setMensaje("");
+
+    const { error } = await supabase.rpc("desbloquear_con_anuncio", { p_request_id: id });
+
+    if (error) {
+      setMensaje(`No se pudo desbloquear: ${error.message}`);
+      setActualizando(null);
+      return;
+    }
+
+    await cargarSolicitudes();
+    setActualizando(null);
+  }
   if (cargando) {
     return <main style={{ padding: 16 }}>Cargando...</main>;
   }
@@ -309,6 +336,50 @@ export default function Solicitudes() {
             {new Date(f.created_at).toLocaleDateString("es-MX")}
           </span>
 
+          {contactos[f.id] ? (
+            <div
+              style={{
+                border: "1px dashed #666",
+                borderRadius: 8,
+                padding: 10,
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+              }}
+            >
+              <strong>Contacto</strong>
+              <span>Teléfono: {contactos[f.id].telefono ?? "No registrado"}</span>
+              <span>Correo: {contactos[f.id].correo ?? "No registrado"}</span>
+            </div>
+          ) : f.status !== "cancelled" ? (
+            <div
+              style={{
+                border: "1px dashed #666",
+                borderRadius: 8,
+                padding: 10,
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+              }}
+            >
+              <strong>Contacto bloqueado</strong>
+              <span>
+                {rol === "professional"
+                  ? "Mira un anuncio o activa tu suscripción para ver el teléfono y el correo."
+                  : "Mira un anuncio para ver el teléfono y el correo."}
+              </span>
+              <button
+                onClick={() => desbloquear(f.id)}
+                disabled={actualizando === f.id}
+                style={{
+                  padding: "8px 10px",
+                  cursor: actualizando === f.id ? "not-allowed" : "pointer",
+                }}
+              >
+                {actualizando === f.id ? "Desbloqueando..." : "Ver anuncio y desbloquear"}
+              </button>
+            </div>
+          ) : null}
           {rol === "professional" &&
             SIGUIENTES_ESTADOS[f.status] &&
             f.status !== "completed" &&
