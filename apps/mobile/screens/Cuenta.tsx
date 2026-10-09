@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { supabase } from "../lib/supabase";
 import { colors, spacing, radius, font, shadow } from "../theme";
 import Boton from "../components/Boton";
+import Campo from "../components/Campo";
 
 function Fila({ texto, onPress, ultima }: { texto: string; onPress: () => void; ultima?: boolean }) {
   return (
@@ -24,6 +25,9 @@ export default function Cuenta({ navigation }: any) {
   const [nombre, setNombre] = useState("");
   const [rol, setRol] = useState("");
   const [cargando, setCargando] = useState(true);
+  const [telefono, setTelefono] = useState("");
+  const [guardandoTel, setGuardandoTel] = useState(false);
+  const [msgTel, setMsgTel] = useState("");
 
   useEffect(() => {
     async function cargar() {
@@ -42,11 +46,27 @@ export default function Cuenta({ navigation }: any) {
 
       setNombre(data?.full_name ?? user.user_metadata?.full_name ?? user.email ?? "");
       setRol(data?.role ?? user.user_metadata?.role ?? "");
+      if ((data?.role ?? user.user_metadata?.role) === "client") {
+        const { data: contacto } = await supabase.rpc("mi_contacto");
+        setTelefono(contacto?.[0]?.telefono ?? "");
+      }
       setCargando(false);
     }
     cargar();
   }, [navigation]);
 
+  async function guardarTelefono() {
+    setMsgTel("");
+    setGuardandoTel(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const r = await supabase
+      .from("users")
+      .update({ phone: telefono.trim() || null })
+      .eq("id", user!.id)
+      .select("id");
+    setGuardandoTel(false);
+    setMsgTel(r.error || !r.data?.length ? "No se pudo guardar el teléfono." : "Teléfono guardado.");
+  }
   async function cerrarSesion() {
     await supabase.auth.signOut();
     navigation.replace("Login");
@@ -89,6 +109,23 @@ export default function Cuenta({ navigation }: any) {
         <Fila texto="Buscar profesionales" onPress={() => navigation.navigate("Profesionales")} ultima />
       </View>
 
+      {rol === "client" && (
+        <View style={styles.telefonoCaja}>
+          <Text style={styles.telefonoTitulo}>Mi teléfono de contacto</Text>
+          <Campo
+            placeholder="Teléfono (opcional)"
+            keyboardType="phone-pad"
+            value={telefono}
+            onChangeText={setTelefono}
+          />
+          {msgTel ? <Text style={styles.telefonoMsg}>{msgTel}</Text> : null}
+          <Boton
+            titulo={guardandoTel ? "Guardando..." : "Guardar teléfono"}
+            onPress={guardarTelefono}
+            deshabilitado={guardandoTel}
+          />
+        </View>
+      )}
       <View style={styles.pie}>
         <Boton titulo="Cerrar sesión" tipo="secundario" onPress={cerrarSesion} />
       </View>
@@ -144,4 +181,15 @@ const styles = StyleSheet.create({
   filaTexto: { fontSize: font.body, color: colors.text },
   flecha: { fontSize: 24, color: colors.textMuted },
   pie: { padding: spacing.md, marginTop: "auto" },
+  telefonoCaja: {
+    backgroundColor: colors.card,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    gap: spacing.sm + 2,
+    ...shadow,
+  },
+  telefonoTitulo: { fontSize: font.body, fontWeight: "bold", color: colors.primaryDark },
+  telefonoMsg: { fontSize: font.small, color: colors.textMuted },
 });
