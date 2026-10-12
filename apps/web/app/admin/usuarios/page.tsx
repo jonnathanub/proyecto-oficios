@@ -14,6 +14,18 @@ type Usuario = {
 
 const POR_PAGINA = 20;
 
+const ROLES: Record<string, string> = {
+  admin: "Administrador",
+  professional: "Profesional",
+  client: "Cliente",
+};
+
+const COLOR_ROL: Record<string, string> = {
+  admin: "bg-indigo-100 text-indigo-800",
+  professional: "bg-blue-100 text-blue-900",
+  client: "bg-gray-100 text-gray-700",
+};
+
 export default function AdminUsuarios() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -34,7 +46,9 @@ export default function AdminUsuarios() {
 
     const lista = (data ?? []) as Omit<Usuario, "email">[];
     const { data: correos } = await supabase.rpc("admin_emails", { p_ids: lista.map((x) => x.id) });
-    const mapaCorreos = Object.fromEntries(((correos ?? []) as { id: string; correo: string }[]).map((c) => [c.id, c.correo]));
+    const mapaCorreos = Object.fromEntries(
+      ((correos ?? []) as { id: string; correo: string }[]).map((c) => [c.id, c.correo])
+    );
     setUsuarios(lista.map((x) => ({ ...x, email: mapaCorreos[x.id] ?? "" })));
     setTotal(count ?? 0);
     setCargando(false);
@@ -53,54 +67,92 @@ export default function AdminUsuarios() {
 
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 
-  if (cargando) return <p>Cargando...</p>;
+  if (cargando) return <p className="py-10 text-center text-muted">Cargando...</p>;
 
   return (
-    <main>
-      <h1>Usuarios</h1>
-      <p style={{ fontSize: 13, opacity: 0.75 }}>
-        {total} usuario{total !== 1 ? "s" : ""} - pagina {pagina} de {totalPaginas}
-      </p>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left" }}>Nombre</th>
-            <th style={{ textAlign: "left" }}>Correo</th>
-            <th style={{ textAlign: "left" }}>Rol</th>
-            <th style={{ textAlign: "left" }}>Estado</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {usuarios.map((u) => (
-            <tr key={u.id} style={{ borderTop: "1px solid #444" }}>
-              <td>{u.full_name ?? "Sin nombre"}</td>
-              <td>{u.email}</td>
-              <td>{u.role}</td>
-              <td>{u.suspended ? "Suspendido" : "Activo"}</td>
-              <td>
-                {u.role !== "admin" && (
-                  <button
-                    onClick={() => alternarSuspension(u.id, u.suspended)}
-                    disabled={actualizando === u.id}
-                  >
-                    {u.suspended ? "Reactivar" : "Suspender"}
-                  </button>
-                )}
-              </td>
+    <main className="flex flex-col gap-5">
+      <div>
+        <h1>Usuarios</h1>
+        <p className="text-sm text-muted">
+          {total} usuario{total !== 1 ? "s" : ""} · página {pagina} de {totalPaginas}
+        </p>
+      </div>
+
+      <div className="overflow-x-auto rounded-2xl bg-card shadow-sm">
+        <table className="w-full border-collapse text-left">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {usuarios.map((u) => (
+              <tr key={u.id} className="border-t border-border">
+                <td className="font-medium">{u.full_name ?? "Sin nombre"}</td>
+                <td className="text-muted">{u.email}</td>
+                <td>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-bold ${
+                      COLOR_ROL[u.role] ?? "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {ROLES[u.role] ?? u.role}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-bold ${
+                      u.suspended ? "bg-red-100 text-red-800" : "bg-emerald-100 text-emerald-800"
+                    }`}
+                  >
+                    {u.suspended ? "Suspendido" : "Activo"}
+                  </span>
+                </td>
+                <td className="text-right">
+                  {u.role !== "admin" && (
+                    <button
+                      onClick={() => alternarSuspension(u.id, u.suspended)}
+                      disabled={actualizando === u.id}
+                      className={
+                        u.suspended
+                          ? "border border-primary bg-white text-primary"
+                          : "bg-danger"
+                      }
+                    >
+                      {u.suspended ? "Reactivar" : "Suspender"}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {totalPaginas > 1 && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "center", marginTop: 16 }}>
+        <div className="flex items-center justify-center gap-4">
           {pagina > 1 && (
-            <button onClick={() => setPagina((p) => p - 1)}>Anterior</button>
+            <button
+              onClick={() => setPagina((p) => p - 1)}
+              className="border border-primary bg-white text-primary"
+            >
+              ← Anterior
+            </button>
           )}
-          <span>Pagina {pagina} de {totalPaginas}</span>
+          <span className="text-sm text-muted">
+            Página {pagina} de {totalPaginas}
+          </span>
           {pagina < totalPaginas && (
-            <button onClick={() => setPagina((p) => p + 1)}>Siguiente</button>
+            <button
+              onClick={() => setPagina((p) => p + 1)}
+              className="border border-primary bg-white text-primary"
+            >
+              Siguiente →
+            </button>
           )}
         </div>
       )}
