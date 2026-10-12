@@ -64,7 +64,7 @@ export default function AdminPublicaciones() {
   }
 
   async function eliminar(id: string) {
-    if (!confirm("Eliminar esta publicacion de forma permanente?")) return;
+    if (!confirm("¿Eliminar esta publicación de forma permanente?")) return;
     setActualizando(id);
     await supabase.from("services").delete().eq("id", id);
     await cargar();
@@ -73,58 +73,93 @@ export default function AdminPublicaciones() {
 
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 
-  if (cargando) return <p>Cargando...</p>;
+  if (cargando) return <p className="py-10 text-center text-muted">Cargando...</p>;
 
   return (
-    <main>
-      <h1>Publicaciones</h1>
-      <p style={{ fontSize: 13, opacity: 0.75 }}>
-        {total} publicacion{total !== 1 ? "es" : ""} - pagina {pagina} de {totalPaginas}
-      </p>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left" }}>Titulo</th>
-            <th style={{ textAlign: "left" }}>Categoria</th>
-            <th style={{ textAlign: "left" }}>Ubicacion</th>
-            <th style={{ textAlign: "left" }}>Estado</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {servicios.map((s) => (
-            <tr key={s.id} style={{ borderTop: "1px solid #444" }}>
-              <td>{s.title}</td>
-              <td>{categorias[s.category_id] ?? "-"}</td>
-              <td>{[s.municipality, s.state].filter(Boolean).join(", ") || "-"}</td>
-              <td>{s.active ? "Activa" : "Desactivada"}</td>
-              <td style={{ display: "flex", gap: 6 }}>
-                <button
-                  onClick={() => alternarActivo(s.id, s.active)}
-                  disabled={actualizando === s.id}
-                >
-                  {s.active ? "Desactivar" : "Activar"}
-                </button>
-                <button
-                  onClick={() => eliminar(s.id)}
-                  disabled={actualizando === s.id}
-                >
-                  Eliminar
-                </button>
-              </td>
+    <main className="flex flex-col gap-5">
+      <div>
+        <h1>Publicaciones</h1>
+        <p className="text-sm text-muted">
+          {total} publicación{total !== 1 ? "es" : ""} · página {pagina} de {totalPaginas}
+        </p>
+      </div>
+
+      <div className="overflow-x-auto rounded-2xl bg-card shadow-sm">
+        <table className="w-full border-collapse text-left">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Categoría</th>
+              <th>Ubicación</th>
+              <th>Estado</th>
+              <th></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {servicios.map((s) => (
+              <tr key={s.id} className="border-t border-border">
+                <td className="font-medium">{s.title}</td>
+                <td>
+                  <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-primary-dark">
+                    {categorias[s.category_id] ?? "-"}
+                  </span>
+                </td>
+                <td className="text-muted">
+                  {[s.municipality, s.state].filter(Boolean).join(", ") || "-"}
+                </td>
+                <td>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-bold ${
+                      s.active ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"
+                    }`}
+                  >
+                    {s.active ? "Activa" : "Desactivada"}
+                  </span>
+                </td>
+                <td>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => alternarActivo(s.id, s.active)}
+                      disabled={actualizando === s.id}
+                      className="border border-primary bg-white text-primary"
+                    >
+                      {s.active ? "Desactivar" : "Activar"}
+                    </button>
+                    <button
+                      onClick={() => eliminar(s.id)}
+                      disabled={actualizando === s.id}
+                      className="bg-danger"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {totalPaginas > 1 && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "center", marginTop: 16 }}>
+        <div className="flex items-center justify-center gap-4">
           {pagina > 1 && (
-            <button onClick={() => setPagina((p) => p - 1)}>Anterior</button>
+            <button
+              onClick={() => setPagina((p) => p - 1)}
+              className="border border-primary bg-white text-primary"
+            >
+              ← Anterior
+            </button>
           )}
-          <span>Pagina {pagina} de {totalPaginas}</span>
+          <span className="text-sm text-muted">
+            Página {pagina} de {totalPaginas}
+          </span>
           {pagina < totalPaginas && (
-            <button onClick={() => setPagina((p) => p + 1)}>Siguiente</button>
+            <button
+              onClick={() => setPagina((p) => p + 1)}
+              className="border border-primary bg-white text-primary"
+            >
+              Siguiente →
+            </button>
           )}
         </div>
       )}
