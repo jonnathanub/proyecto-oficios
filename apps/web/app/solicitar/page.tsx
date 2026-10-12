@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,21 @@ type Servicio = {
   professional_id: string;
   professional_profiles: { users: { full_name: string | null } | null } | null;
 };
+
+function Cabecera() {
+  return (
+    <header className="border-b border-border bg-card">
+      <nav className="mx-auto flex w-full max-w-xl items-center justify-between px-4 py-3">
+        <a href="/" className="text-2xl font-bold text-primary hover:no-underline">
+          Oficios
+        </a>
+        <a href="/cuenta" className="text-sm">
+          Mi cuenta
+        </a>
+      </nav>
+    </header>
+  );
+}
 
 export default function Solicitar() {
   const router = useRouter();
@@ -43,8 +58,6 @@ export default function Solicitar() {
         setCargando(false);
         return;
       }
-
-      console.log("USUARIO ACTUAL:", user.id, user.email);
 
       setUserId(user.id);
 
@@ -100,63 +113,116 @@ export default function Solicitar() {
     setEnviado(true);
   }
 
-  if (cargando) return <main style={{ padding: 16 }}>Cargando...</main>;
+  if (cargando) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto w-full max-w-xl px-4 py-10 text-center text-muted">
+          Cargando...
+        </main>
+      </div>
+    );
+  }
 
   if (!esCliente) {
     return (
-      <main style={{ maxWidth: 480, margin: "40px auto", padding: 16 }}>
-        <h1>Solicitar servicio</h1>
-        <p>Solo las cuentas de tipo Cliente pueden solicitar servicios.</p>
-        <a href="/cuenta">Volver a mi cuenta</a>
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-8">
+          <h1>Solicitar servicio</h1>
+          <p className="rounded-2xl bg-card p-5 shadow-sm">
+            Solo las cuentas de tipo Cliente pueden solicitar servicios.
+          </p>
+          <a href="/cuenta">Volver a mi cuenta</a>
+        </main>
+      </div>
     );
   }
 
   if (!servicio) {
     return (
-      <main style={{ maxWidth: 480, margin: "40px auto", padding: 16 }}>
-        <h1>Solicitar servicio</h1>
-        <p>{mensaje}</p>
-        <a href="/profesionales">Buscar profesionales</a>
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-8">
+          <h1>Solicitar servicio</h1>
+          <p className="rounded-2xl bg-card p-5 shadow-sm">{mensaje}</p>
+          <a href="/profesionales">Buscar profesionales</a>
+        </main>
+      </div>
     );
   }
 
   if (enviado) {
     return (
-      <main style={{ maxWidth: 480, margin: "40px auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-        <h1>¡Solicitud enviada!</h1>
-        <p>El profesional la verá en su cuenta y te contactará.</p>
-        <a href="/solicitudes">Ver mis solicitudes</a>
-        <a href="/profesionales">Seguir buscando</a>
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-8">
+          <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-sm">
+            <span className="text-5xl text-emerald-700">✓</span>
+            <h1>¡Solicitud enviada!</h1>
+            <p className="text-muted">El profesional la verá en su cuenta y te contactará.</p>
+            <a
+              href="/solicitudes"
+              className="mt-2 w-full rounded-xl bg-primary px-4 py-3 font-semibold text-white hover:no-underline"
+            >
+              Ver mis solicitudes
+            </a>
+            <a href="/profesionales">Seguir buscando</a>
+          </div>
+        </main>
+      </div>
     );
   }
 
   return (
-    <main style={{ maxWidth: 480, margin: "40px auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <h1>Solicitar servicio</h1>
+    <div className="flex min-h-screen flex-col">
+      <Cabecera />
+      <main className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 py-8">
+        <h1>Solicitar servicio</h1>
 
-      <div style={{ border: "1px solid #666", borderRadius: 8, padding: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-        <strong>{servicio.title}</strong>
-        <span>Profesional: {servicio.professional_profiles?.users?.full_name ?? "Sin nombre"}</span>
-        {servicio.price_text && <span>Precio: {servicio.price_text}</span>}
-        <span>Zona: {[servicio.municipality, servicio.state].filter(Boolean).join(", ") || "Sin zona"}</span>
-      </div>
+        <div className="flex flex-col gap-1 rounded-2xl bg-card p-5 shadow-sm">
+          <strong className="text-lg">{servicio.title}</strong>
+          <span className="text-muted">
+            {servicio.professional_profiles?.users?.full_name ?? "Sin nombre"}
+          </span>
+          {servicio.price_text && (
+            <span className="font-bold text-primary">{servicio.price_text}</span>
+          )}
+          <span className="text-sm text-muted">
+            📍 {[servicio.municipality, servicio.state].filter(Boolean).join(", ") || "Sin zona"}
+          </span>
+        </div>
 
-      <textarea rows={4} placeholder="Describe qué necesitas" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
-      <label>Fecha deseada (opcional)</label>
-      <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
-      <input type="number" min={0} placeholder="Tu presupuesto en MXN (opcional)" value={presupuesto} onChange={(e) => setPresupuesto(e.target.value)} />
+        <div className="flex flex-col gap-4 rounded-2xl bg-card p-5 shadow-sm">
+          <textarea
+            rows={4}
+            placeholder="Describe qué necesitas"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+          />
+          <label className="text-sm text-muted">Fecha deseada (opcional)</label>
+          <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <input
+            type="number"
+            min={0}
+            placeholder="Tu presupuesto en MXN (opcional)"
+            value={presupuesto}
+            onChange={(e) => setPresupuesto(e.target.value)}
+          />
 
-      <button onClick={enviar} disabled={enviando}>
-        {enviando ? "Enviando..." : "Enviar solicitud"}
-      </button>
+          {mensaje && (
+            <p className="rounded-lg bg-red-100 px-3 py-2 text-sm text-danger">{mensaje}</p>
+          )}
 
-      {mensaje && <p>{mensaje}</p>}
+          <button onClick={enviar} disabled={enviando} className="w-full">
+            {enviando ? "Enviando..." : "Enviar solicitud"}
+          </button>
+        </div>
 
-      <a href="/profesionales">Volver a la búsqueda</a>
-    </main>
+        <a href="/profesionales" className="text-center">
+          Volver a la búsqueda
+        </a>
+      </main>
+    </div>
   );
 }
-

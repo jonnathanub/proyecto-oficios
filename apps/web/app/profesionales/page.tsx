@@ -1,10 +1,10 @@
-﻿import { supabase } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import FavoritoButton from "../../components/FavoritoButton";
 import AdSlot from "../../lib/AdSlot";
 
 export const metadata = {
   title: "Encuentra profesionales de oficio",
-  description: "Busca plomeros, electricistas, carpinteros y mas profesionales cerca de ti.",
+  description: "Busca plomeros, electricistas, carpinteros y más profesionales cerca de ti.",
 };
 
 type Fila = {
@@ -80,126 +80,145 @@ export default async function Profesionales({
   }
 
   return (
-    <main
-      style={{
-        maxWidth: 640,
-        margin: "40px auto",
-        padding: 16,
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-      }}
-    >
-      <h1>Encuentra profesionales</h1>
+    <div className="flex min-h-screen flex-col">
+      <header className="border-b border-border bg-card">
+        <nav className="mx-auto flex w-full max-w-3xl items-center justify-between px-4 py-3">
+          <a href="/" className="text-2xl font-bold text-primary hover:no-underline">
+            Oficios
+          </a>
+          <a href="/cuenta" className="text-sm">
+            Mi cuenta
+          </a>
+        </nav>
+      </header>
 
-      <form
-        method="get"
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        }}
-      >
-        <select name="categoria" defaultValue={categoria}>
-          <option value="">Todos los oficios</option>
+      <main className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-8">
+        <h1>Encuentra profesionales</h1>
 
-          {(cats ?? []).map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        <form
+          method="get"
+          className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-sm sm:flex-row sm:items-center"
+        >
+          <select name="categoria" defaultValue={categoria} className="sm:w-56">
+            <option value="">Todos los oficios</option>
 
-        <input
-          name="municipio"
-          placeholder="Municipio (ej. Toluca)"
-          defaultValue={municipio}
-        />
+            {(cats ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
 
-        <button type="submit">Buscar</button>
-      </form>
+          <input
+            name="municipio"
+            placeholder="Municipio (ej. Toluca)"
+            defaultValue={municipio}
+            className="flex-1"
+          />
 
-      <AdSlot location="search_results" categoryId={categoria || undefined} />
+          <button type="submit">Buscar</button>
+        </form>
 
-      {error && <p>Error al cargar: {error.message}</p>}
+        <AdSlot location="search_results" categoryId={categoria || undefined} />
 
-      {!error && servicios.length === 0 && (
-        <p>No encontramos servicios con esos filtros.</p>
-      )}
+        {error && (
+          <p className="rounded-lg bg-red-100 px-3 py-2 text-sm text-danger">
+            Error al cargar: {error.message}
+          </p>
+        )}
 
-      {!error && total > 0 && (
-        <p style={{ fontSize: 13, opacity: 0.75 }}>
-          {total} resultado{total !== 1 ? "s" : ""} - pagina {paginaActual} de {totalPaginas}
-        </p>
-      )}
+        {!error && servicios.length === 0 && (
+          <p className="py-6 text-center text-muted">
+            No encontramos servicios con esos filtros.
+          </p>
+        )}
 
-      {servicios.map((s, index) => {
-        const p = s.professional_profiles;
+        {!error && total > 0 && (
+          <p className="text-sm text-muted">
+            {total} resultado{total !== 1 ? "s" : ""} · página {paginaActual} de {totalPaginas}
+          </p>
+        )}
 
-        return (
-          <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div
-              style={{
-                border: "1px solid #666",
-                borderRadius: 8,
-                padding: 12,
-                display: "flex",
-                flexDirection: "column",
-                gap: 4,
-              }}
-            >
-              <strong>{s.title}</strong>
+        {servicios.map((s, index) => {
+          const p = s.professional_profiles;
 
-              <span>{nombreCategoria(s.category_id)}</span>
+          return (
+            <div key={s.id} className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2 rounded-2xl bg-card p-5 shadow-sm">
+                <span className="self-start rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-primary-dark">
+                  {nombreCategoria(s.category_id)}
+                </span>
 
-              <span>
-                Profesional: {p?.users?.full_name ?? "Sin nombre"}
-              </span>
+                <strong className="text-lg">{s.title}</strong>
 
-              {s.description && <span>{s.description}</span>}
+                <span className="text-muted">
+                  {p?.users?.full_name ?? "Sin nombre"}
+                </span>
 
-              {s.price_text && (
-                <span>Precio: {s.price_text}</span>
+                {s.description && <span>{s.description}</span>}
+
+                {s.price_text && (
+                  <span className="font-bold text-primary">{s.price_text}</span>
+                )}
+
+                <span className="text-sm text-muted">
+                  📍{" "}
+                  {[s.neighborhood, s.municipality, s.state]
+                    .filter(Boolean)
+                    .join(", ") || "Sin zona"}
+                </span>
+
+                {p &&
+                  (p.review_count > 0 ? (
+                    <span className="text-sm font-semibold text-amber-700">
+                      ★ {p.avg_rating} ({p.review_count} reseñas)
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted">Sin calificaciones todavía</span>
+                  ))}
+
+                {p &&
+                  (p.years_experience != null ? (
+                    <span className="text-sm text-muted">
+                      {p.years_experience} años de experiencia
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted">Experiencia: No especificada</span>
+                  ))}
+
+                {p && (
+                  <div className="mt-1">
+                    <FavoritoButton professionalId={p.id} />
+                  </div>
+                )}
+
+                <a
+                  href={`/solicitar?servicio=${s.id}`}
+                  className="mt-2 rounded-xl bg-primary px-4 py-3 text-center font-semibold text-white hover:no-underline"
+                >
+                  Solicitar servicio
+                </a>
+              </div>
+
+              {index === 1 && (
+                <AdSlot location="sponsored_card" categoryId={categoria || undefined} />
               )}
-
-              <span>
-                Zona:{" "}
-                {[s.neighborhood, s.municipality, s.state]
-                  .filter(Boolean)
-                  .join(", ") || "Sin zona"}
-              </span>
-
-              {p && (p.review_count > 0 ? (<span>Calificacion: {p.avg_rating} ({p.review_count} resenas)</span>) : (<span>Sin calificaciones todavia</span>))}
-
-              {p && (p.years_experience != null ? (<span>{p.years_experience} anos de experiencia</span>) : (<span>Experiencia: No especificada</span>))}
-
-              {p && (
-                <FavoritoButton professionalId={p.id} />
-              )}
-
-              <a href={`/solicitar?servicio=${s.id}`}>
-                Solicitar servicio
-              </a>
             </div>
+          );
+        })}
 
-            {index === 1 && <AdSlot location="sponsored_card" categoryId={categoria || undefined} />}
+        {totalPaginas > 1 && (
+          <div className="flex items-center justify-center gap-4">
+            {paginaActual > 1 && <a href={urlPagina(paginaActual - 1)}>← Anterior</a>}
+            <span className="text-sm text-muted">
+              Página {paginaActual} de {totalPaginas}
+            </span>
+            {paginaActual < totalPaginas && (
+              <a href={urlPagina(paginaActual + 1)}>Siguiente →</a>
+            )}
           </div>
-        );
-      })}
-
-      {totalPaginas > 1 && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
-          {paginaActual > 1 && (
-            <a href={urlPagina(paginaActual - 1)}>Anterior</a>
-          )}
-          <span>Pagina {paginaActual} de {totalPaginas}</span>
-          {paginaActual < totalPaginas && (
-            <a href={urlPagina(paginaActual + 1)}>Siguiente</a>
-          )}
-        </div>
-      )}
-
-      <a href="/cuenta">Mi cuenta</a>
-    </main>
+        )}
+      </main>
+    </div>
   );
 }
