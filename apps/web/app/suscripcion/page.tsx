@@ -18,6 +18,21 @@ type MiSuscripcion = {
   end_date: string | null;
 };
 
+function Cabecera() {
+  return (
+    <header className="border-b border-border bg-card">
+      <nav className="mx-auto flex w-full max-w-xl items-center justify-between px-4 py-3">
+        <a href="/" className="text-2xl font-bold text-primary hover:no-underline">
+          Oficios
+        </a>
+        <a href="/cuenta" className="text-sm">
+          Mi cuenta
+        </a>
+      </nav>
+    </header>
+  );
+}
+
 export default function Suscripcion() {
   const router = useRouter();
   const [cargando, setCargando] = useState(true);
@@ -41,7 +56,7 @@ export default function Suscripcion() {
       .maybeSingle();
 
     if (!p) {
-      setMensaje("Esta seccion es solo para cuentas de tipo Profesional.");
+      setMensaje("Esta sección es solo para cuentas de tipo Profesional.");
       setCargando(false);
       return;
     }
@@ -98,55 +113,88 @@ export default function Suscripcion() {
     setProcesando(null);
   }
 
-  if (cargando) return <main style={{ padding: 16 }}>Cargando...</main>;
+  if (cargando) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto w-full max-w-xl px-4 py-10 text-center text-muted">
+          Cargando...
+        </main>
+      </div>
+    );
+  }
 
   if (mensaje && !perfilId) {
     return (
-      <main style={{ maxWidth: 480, margin: "40px auto", padding: 16 }}>
-        <h1>Suscripcion</h1>
-        <p>{mensaje}</p>
-        <a href="/cuenta">Volver a mi cuenta</a>
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-8">
+          <h1>Suscripción</h1>
+          <p className="rounded-2xl bg-card p-5 shadow-sm">{mensaje}</p>
+          <a href="/cuenta">Volver a mi cuenta</a>
+        </main>
+      </div>
     );
   }
 
   return (
-    <main style={{ maxWidth: 480, margin: "40px auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <h1>Mi suscripcion</h1>
-      <p style={{ fontSize: 13, opacity: 0.8 }}>
-        Los pagos son simulados por ahora, no se realiza ningun cobro real.
-      </p>
+    <div className="flex min-h-screen flex-col">
+      <Cabecera />
 
-      {actual ? (
-        <div style={{ border: "1px solid #666", borderRadius: 8, padding: 12 }}>
-          <p>Tienes un plan activo hasta {actual.end_date ? new Date(actual.end_date).toLocaleDateString("es-MX") : "-"}.</p>
-          <button onClick={cancelar} disabled={procesando === actual.id}>
-            {procesando === actual.id ? "Cancelando..." : "Cancelar suscripcion"}
-          </button>
-        </div>
-      ) : (
-        <p>No tienes un plan activo. Tu perfil aparece en orden normal en las busquedas.</p>
-      )}
+      <main className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 py-8">
+        <h1>Mi suscripción</h1>
 
-      {!actual && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <h2>Planes disponibles</h2>
-          {planes.length === 0 && <p>Todavia no hay planes configurados.</p>}
-          {planes.map((p) => (
-            <div key={p.id} style={{ border: "1px solid #666", borderRadius: 8, padding: 12 }}>
-              <strong>{p.name}</strong>
-              <p>${p.price} MXN / mes (simulado)</p>
-              <button onClick={() => contratar(p.id)} disabled={procesando === p.id}>
-                {procesando === p.id ? "Activando..." : "Contratar"}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+        <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-800">
+          Los pagos son simulados por ahora, no se realiza ningún cobro real.
+        </p>
 
-      {mensaje && <p>{mensaje}</p>}
+        {actual ? (
+          <div className="flex flex-col gap-3 rounded-2xl border-2 border-emerald-500 bg-card p-5 shadow-sm">
+            <strong className="text-lg text-emerald-800">✓ Plan activo</strong>
+            <p>
+              Tienes un plan activo hasta{" "}
+              {actual.end_date ? new Date(actual.end_date).toLocaleDateString("es-MX") : "-"}.
+            </p>
+            <button onClick={cancelar} disabled={procesando === actual.id} className="bg-danger">
+              {procesando === actual.id ? "Cancelando..." : "Cancelar suscripción"}
+            </button>
+          </div>
+        ) : (
+          <p className="text-muted">
+            No tienes un plan activo. Tu perfil aparece en orden normal en las búsquedas.
+          </p>
+        )}
 
-      <a href="/cuenta">Volver a mi cuenta</a>
-    </main>
+        {!actual && (
+          <div className="flex flex-col gap-4">
+            <h2>Planes disponibles</h2>
+            {planes.length === 0 && (
+              <p className="text-muted">Todavía no hay planes configurados.</p>
+            )}
+            {planes.map((p) => (
+              <div key={p.id} className="flex flex-col gap-2 rounded-2xl bg-card p-5 shadow-sm">
+                <strong className="text-lg">{p.name}</strong>
+                <p className="text-3xl font-bold text-primary">
+                  ${p.price}{" "}
+                  <span className="text-sm font-semibold text-muted">MXN / mes</span>
+                </p>
+                <p className="text-sm text-muted">(simulado)</p>
+                <button onClick={() => contratar(p.id)} disabled={procesando === p.id}>
+                  {procesando === p.id ? "Activando..." : "Contratar"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {mensaje && (
+          <p className="rounded-lg bg-red-100 px-3 py-2 text-sm text-danger">{mensaje}</p>
+        )}
+
+        <a href="/cuenta" className="text-center">
+          Volver a mi cuenta
+        </a>
+      </main>
+    </div>
   );
 }
