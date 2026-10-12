@@ -4,6 +4,29 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 
+const ETIQUETAS: Record<number, string> = {
+  1: "Muy malo",
+  2: "Malo",
+  3: "Regular",
+  4: "Bueno",
+  5: "Excelente",
+};
+
+function Cabecera() {
+  return (
+    <header className="border-b border-border bg-card">
+      <nav className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3">
+        <a href="/" className="text-2xl font-bold text-primary hover:no-underline">
+          Oficios
+        </a>
+        <a href="/cuenta" className="text-sm">
+          Mi cuenta
+        </a>
+      </nav>
+    </header>
+  );
+}
+
 export default function Resena() {
   const router = useRouter();
   const params = useParams();
@@ -85,65 +108,76 @@ export default function Resena() {
     router.push("/solicitudes");
   }
 
-  if (cargando) return <main style={{ padding: 16 }}>Cargando...</main>;
+  if (cargando) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto w-full max-w-md px-4 py-10 text-center text-muted">
+          Cargando...
+        </main>
+      </div>
+    );
+  }
 
   if (!permitido) {
     return (
-      <main style={{ maxWidth: 480, margin: "40px auto", padding: 16 }}>
-        <h1>Calificar servicio</h1>
-        <p>{mensaje}</p>
-        <a href="/solicitudes">Volver a mis solicitudes</a>
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-8">
+          <h1>Calificar servicio</h1>
+          <p className="rounded-2xl bg-card p-5 shadow-sm">{mensaje}</p>
+          <a href="/solicitudes">Volver a mis solicitudes</a>
+        </main>
+      </div>
     );
   }
 
   return (
-    <main
-      style={{
-        maxWidth: 480,
-        margin: "40px auto",
-        padding: 16,
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-      }}
-    >
-      <h1>Calificar servicio</h1>
+    <div className="flex min-h-screen flex-col">
+      <Cabecera />
 
-      <label>¿Cómo calificarías el trabajo?</label>
-      <div style={{ display: "flex", gap: 6 }}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            onClick={() => setRating(n)}
-            style={{
-              fontSize: 24,
-              padding: "4px 10px",
-              cursor: "pointer",
-              background: n <= rating ? "#f5b301" : "transparent",
-              border: "1px solid #666",
-              borderRadius: 6,
-            }}
-          >
-            ★
+      <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-8">
+        <h1>Calificar servicio</h1>
+
+        <div className="flex flex-col gap-4 rounded-2xl bg-card p-6 shadow-sm">
+          <p className="text-center">¿Cómo calificarías el trabajo?</p>
+
+          <div className="flex justify-center gap-2">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                onClick={() => setRating(n)}
+                aria-label={`${n} estrellas`}
+                className={`rounded-xl px-3 py-1 text-4xl leading-none ${
+                  n <= rating ? "bg-accent text-white" : "bg-gray-100 text-gray-300"
+                }`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+          <p className="text-center font-semibold text-muted">{ETIQUETAS[rating]}</p>
+
+          <textarea
+            rows={4}
+            placeholder="Cuéntanos cómo te fue (opcional)"
+            value={comentario}
+            onChange={(e) => setComentario(e.target.value)}
+          />
+
+          {mensaje && (
+            <p className="rounded-lg bg-red-100 px-3 py-2 text-sm text-danger">{mensaje}</p>
+          )}
+
+          <button onClick={enviar} disabled={enviando} className="w-full">
+            {enviando ? "Enviando..." : "Enviar calificación"}
           </button>
-        ))}
-      </div>
+        </div>
 
-      <textarea
-        rows={4}
-        placeholder="Cuéntanos cómo te fue (opcional)"
-        value={comentario}
-        onChange={(e) => setComentario(e.target.value)}
-      />
-
-      <button onClick={enviar} disabled={enviando} style={{ padding: "8px 10px", cursor: "pointer" }}>
-        {enviando ? "Enviando..." : "Enviar calificación"}
-      </button>
-
-      {mensaje && <p>{mensaje}</p>}
-
-      <a href="/solicitudes">Cancelar</a>
-    </main>
+        <a href="/solicitudes" className="text-center">
+          Cancelar
+        </a>
+      </main>
+    </div>
   );
 }
