@@ -19,10 +19,15 @@ type Anuncio = {
 
 const UBICACIONES = [
   { value: "home_banner", label: "Banner de inicio" },
-  { value: "search_results", label: "Dentro de resultados de busqueda" },
-  { value: "category_page", label: "Pagina de categoria" },
+  { value: "search_results", label: "Dentro de resultados de búsqueda" },
+  { value: "category_page", label: "Página de categoría" },
   { value: "sponsored_card", label: "Tarjeta patrocinada" },
 ];
+
+const ESTADOS: Record<string, { texto: string; clase: string }> = {
+  active: { texto: "Activo", clase: "bg-emerald-100 text-emerald-800" },
+  paused: { texto: "Pausado", clase: "bg-amber-100 text-amber-800" },
+};
 
 export default function AdminPublicidad() {
   const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
@@ -53,7 +58,7 @@ export default function AdminPublicidad() {
 
   async function crear() {
     if (!titulo) {
-      setMensaje("El titulo es obligatorio.");
+      setMensaje("El título es obligatorio.");
       return;
     }
     setGuardando(true);
@@ -92,68 +97,116 @@ export default function AdminPublicidad() {
     setActualizando(null);
   }
 
-  if (cargando) return <p>Cargando...</p>;
+  if (cargando) return <p className="py-10 text-center text-muted">Cargando...</p>;
 
   return (
-    <main style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <h1>Publicidad</h1>
-      <p style={{ fontSize: 13, opacity: 0.8 }}>
-        Anuncios simulados por ahora, sin integracion de pago real.
-      </p>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 360 }}>
-        <h2>Nuevo anuncio</h2>
-        <input placeholder="Titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-        <input placeholder="Descripcion (opcional)" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
-        <input placeholder="URL de imagen (opcional)" value={imagenUrl} onChange={(e) => setImagenUrl(e.target.value)} />
-        <input placeholder="URL de destino (opcional)" value={targetUrl} onChange={(e) => setTargetUrl(e.target.value)} />
-        <select value={ubicacion} onChange={(e) => setUbicacion(e.target.value)}>
-          {UBICACIONES.map((u) => (
-            <option key={u.value} value={u.value}>{u.label}</option>
-          ))}
-        </select>
-        <label style={{ fontSize: 13 }}>Fecha de fin (opcional)</label>
-        <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} />
-        <button onClick={crear} disabled={guardando}>
-          {guardando ? "Guardando..." : "Crear anuncio"}
-        </button>
-        {mensaje && <p>{mensaje}</p>}
+    <main className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <h1>Publicidad</h1>
+        <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-800">
+          Anuncios simulados por ahora, sin integración de pago real.
+        </p>
       </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left" }}>Titulo</th>
-            <th style={{ textAlign: "left" }}>Ubicacion</th>
-            <th style={{ textAlign: "left" }}>Estado</th>
-            <th style={{ textAlign: "left" }}>Impresiones</th>
-            <th style={{ textAlign: "left" }}>Clics</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {anuncios.map((a) => (
-            <tr key={a.id} style={{ borderTop: "1px solid #444" }}>
-              <td>{a.title}</td>
-              <td>{UBICACIONES.find((u) => u.value === a.location)?.label ?? a.location}</td>
-              <td>{a.status}</td>
-              <td>{a.impressions}</td>
-              <td>{a.clicks}</td>
-              <td>
-                {a.status === "active" ? (
-                  <button onClick={() => cambiarEstado(a.id, "paused")} disabled={actualizando === a.id}>
-                    Pausar
-                  </button>
-                ) : (
-                  <button onClick={() => cambiarEstado(a.id, "active")} disabled={actualizando === a.id}>
-                    Activar
-                  </button>
-                )}
-              </td>
-            </tr>
+      <section className="flex max-w-xl flex-col gap-3 rounded-2xl bg-card p-5 shadow-sm">
+        <h2>Nuevo anuncio</h2>
+        <input placeholder="Título" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+        <input
+          placeholder="Descripción (opcional)"
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
+        />
+        <input
+          placeholder="URL de imagen (opcional)"
+          value={imagenUrl}
+          onChange={(e) => setImagenUrl(e.target.value)}
+        />
+        <input
+          placeholder="URL de destino (opcional)"
+          value={targetUrl}
+          onChange={(e) => setTargetUrl(e.target.value)}
+        />
+        <select value={ubicacion} onChange={(e) => setUbicacion(e.target.value)}>
+          {UBICACIONES.map((u) => (
+            <option key={u.value} value={u.value}>
+              {u.label}
+            </option>
           ))}
-        </tbody>
-      </table>
+        </select>
+        <label className="text-sm text-muted">Fecha de fin (opcional)</label>
+        <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} />
+
+        {mensaje && (
+          <p className="rounded-lg bg-red-100 px-3 py-2 text-sm text-danger">{mensaje}</p>
+        )}
+
+        <button onClick={crear} disabled={guardando} className="w-full">
+          {guardando ? "Guardando..." : "Crear anuncio"}
+        </button>
+      </section>
+
+      <div className="overflow-x-auto rounded-2xl bg-card shadow-sm">
+        <table className="w-full border-collapse text-left">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Ubicación</th>
+              <th>Estado</th>
+              <th>Impresiones</th>
+              <th>Clics</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {anuncios.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-6 text-center text-muted">
+                  Todavía no hay anuncios.
+                </td>
+              </tr>
+            )}
+            {anuncios.map((a) => {
+              const estado = ESTADOS[a.status] ?? {
+                texto: a.status,
+                clase: "bg-gray-100 text-gray-700",
+              };
+              return (
+                <tr key={a.id} className="border-t border-border">
+                  <td className="font-medium">{a.title}</td>
+                  <td className="text-muted">
+                    {UBICACIONES.find((u) => u.value === a.location)?.label ?? a.location}
+                  </td>
+                  <td>
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${estado.clase}`}>
+                      {estado.texto}
+                    </span>
+                  </td>
+                  <td>{a.impressions}</td>
+                  <td>{a.clicks}</td>
+                  <td className="text-right">
+                    {a.status === "active" ? (
+                      <button
+                        onClick={() => cambiarEstado(a.id, "paused")}
+                        disabled={actualizando === a.id}
+                        className="border border-primary bg-white text-primary"
+                      >
+                        Pausar
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => cambiarEstado(a.id, "active")}
+                        disabled={actualizando === a.id}
+                      >
+                        Activar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </main>
   );
 }
