@@ -4,6 +4,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 
+function Enlace({ href, texto }: { href: string; texto: string }) {
+  return (
+    <a
+      href={href}
+      className="flex items-center justify-between border-b border-border px-4 py-4 text-foreground last:border-b-0 hover:bg-background hover:no-underline"
+    >
+      <span>{texto}</span>
+      <span className="text-xl text-muted">›</span>
+    </a>
+  );
+}
+
 export default function Cuenta() {
   const router = useRouter();
   const [nombre, setNombre] = useState("");
@@ -30,10 +42,12 @@ export default function Cuenta() {
 
       setNombre(data?.full_name ?? user.user_metadata?.full_name ?? user.email ?? "");
       setRol(data?.role ?? user.user_metadata?.role ?? "");
+
       if ((data?.role ?? user.user_metadata?.role) === "client") {
         const { data: contacto } = await supabase.rpc("mi_contacto");
         setTelefono(contacto?.[0]?.telefono ?? "");
       }
+
       setCargando(false);
     }
     cargar();
@@ -51,49 +65,77 @@ export default function Cuenta() {
     setGuardandoTel(false);
     setMsgTel(r.error || !r.data?.length ? "No se pudo guardar el teléfono." : "Teléfono guardado.");
   }
+
   async function cerrarSesion() {
     await supabase.auth.signOut();
     router.push("/login");
   }
 
-  if (cargando) return <main style={{ padding: 16 }}>Cargando...</main>;
+  if (cargando) {
+    return <main className="p-10 text-center text-muted">Cargando...</main>;
+  }
+
+  const inicial = (nombre.trim()[0] ?? "?").toUpperCase();
+  const etiquetaRol =
+    rol === "professional" ? "Profesional" : rol === "admin" ? "Administrador" : "Cliente";
 
   return (
-    <main style={{ maxWidth: 400, margin: "40px auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <h1>Conectado como {nombre}</h1>
-      <p>Rol: {rol === "professional" ? "Profesional" : rol === "admin" ? "Administrador" : "Cliente"}</p>
-      {rol === "client" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, border: "1px dashed #666", borderRadius: 8, padding: 10 }}>
-          <strong>Mi teléfono de contacto</strong>
-          <input
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            placeholder="Teléfono (opcional)"
-            style={{ padding: 8 }}
-          />
-          <button onClick={guardarTelefono} disabled={guardandoTel} style={{ padding: "8px 10px" }}>
-            {guardandoTel ? "Guardando..." : "Guardar teléfono"}
+    <div className="flex min-h-screen flex-col">
+      <header className="border-b border-border bg-card">
+        <nav className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3">
+          <a href="/" className="text-2xl font-bold text-primary hover:no-underline">
+            Oficios
+          </a>
+          <button onClick={cerrarSesion} className="!bg-white !text-primary border border-primary text-sm">
+            Cerrar sesión
           </button>
-          {msgTel && <span>{msgTel}</span>}
+        </nav>
+      </header>
+
+      <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-8">
+        <div className="flex flex-col items-center gap-2 rounded-2xl bg-primary p-6 text-center shadow-sm">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white text-3xl font-bold text-primary">
+            {inicial}
+          </div>
+          <p className="text-xl font-bold text-white">{nombre}</p>
+          <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-foreground">
+            {etiquetaRol}
+          </span>
         </div>
-      )}
-      {rol === "professional" && (
-        <>
-          <a href="/perfil">Mi perfil profesional</a>
-          <a href="/servicios">Mis servicios</a>
-          <a href="/suscripcion">Mi suscripción</a>
-          <a href="/solicitudes">Solicitudes recibidas</a>
-        </>
-      )}
-      {rol === "client" && (
-        <>
-          <a href="/solicitudes">Mis solicitudes</a>
-          <a href="/profesionales">Buscar profesionales</a>
-        </>
-      )}
-      {rol === "admin" && <a href="/admin">Panel de administración</a>}
-      <button onClick={cerrarSesion}>Cerrar sesión</button>
-    </main>
+
+        <div className="overflow-hidden rounded-2xl bg-card shadow-sm">
+          {rol === "professional" && (
+            <>
+              <Enlace href="/perfil" texto="Mi perfil profesional" />
+              <Enlace href="/servicios" texto="Mis servicios" />
+              <Enlace href="/suscripcion" texto="Mi suscripción" />
+              <Enlace href="/solicitudes" texto="Solicitudes recibidas" />
+            </>
+          )}
+          {rol === "client" && (
+            <>
+              <Enlace href="/solicitudes" texto="Mis solicitudes" />
+              <Enlace href="/profesionales" texto="Buscar profesionales" />
+            </>
+          )}
+          {rol === "admin" && <Enlace href="/admin" texto="Panel de administración" />}
+        </div>
+
+        {rol === "client" && (
+          <div className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-sm">
+            <strong className="text-primary-dark">Mi teléfono de contacto</strong>
+            <input
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              placeholder="Teléfono (opcional)"
+            />
+            {msgTel && <span className="text-sm text-muted">{msgTel}</span>}
+            <button onClick={guardarTelefono} disabled={guardandoTel}>
+              {guardandoTel ? "Guardando..." : "Guardar teléfono"}
+            </button>
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
-
