@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,21 @@ async function traerServicios(perfilId: string) {
     .eq("professional_id", perfilId)
     .order("created_at", { ascending: false });
   return (data ?? []) as Servicio[];
+}
+
+function Cabecera() {
+  return (
+    <header className="border-b border-border bg-card">
+      <nav className="mx-auto flex w-full max-w-xl items-center justify-between px-4 py-3">
+        <a href="/" className="text-2xl font-bold text-primary hover:no-underline">
+          Oficios
+        </a>
+        <a href="/cuenta" className="text-sm">
+          Mi cuenta
+        </a>
+      </nav>
+    </header>
+  );
 }
 
 export default function Servicios() {
@@ -161,78 +176,172 @@ export default function Servicios() {
     setServicios(await traerServicios(perfilId));
   }
 
-  if (cargando) return <main style={{ padding: 16 }}>Cargando...</main>;
+  const esOk = mensaje.startsWith("¡Servicio creado");
+
+  if (cargando) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto w-full max-w-xl px-4 py-10 text-center text-muted">
+          Cargando...
+        </main>
+      </div>
+    );
+  }
 
   if (!esProfesional) {
     return (
-      <main style={{ maxWidth: 480, margin: "40px auto", padding: 16 }}>
-        <h1>Mis servicios</h1>
-        <p>Esta sección es solo para cuentas de tipo Profesional.</p>
-        <a href="/cuenta">Volver a mi cuenta</a>
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-8">
+          <h1>Mis servicios</h1>
+          <p className="rounded-2xl bg-card p-5 shadow-sm">
+            Esta sección es solo para cuentas de tipo Profesional.
+          </p>
+          <a href="/cuenta">Volver a mi cuenta</a>
+        </main>
+      </div>
     );
   }
 
   if (!perfilId) {
     return (
-      <main style={{ maxWidth: 480, margin: "40px auto", padding: 16 }}>
-        <h1>Mis servicios</h1>
-        <p>{mensaje}</p>
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-8">
+          <h1>Mis servicios</h1>
+          <p className="rounded-2xl bg-card p-5 shadow-sm">{mensaje}</p>
+        </main>
+      </div>
     );
   }
 
   if (misCategorias.length === 0) {
     return (
-      <main style={{ maxWidth: 480, margin: "40px auto", padding: 16 }}>
-        <h1>Mis servicios</h1>
-        <p>Primero elige tus oficios en tu perfil.</p>
-        <a href="/perfil">Ir a mi perfil profesional</a>
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-8">
+          <h1>Mis servicios</h1>
+          <p className="rounded-2xl bg-card p-5 shadow-sm">
+            Primero elige tus oficios en tu perfil.
+          </p>
+          <a href="/perfil">Ir a mi perfil profesional</a>
+        </main>
+      </div>
     );
   }
 
   return (
-    <main style={{ maxWidth: 480, margin: "40px auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <h1>Mis servicios</h1>
+    <div className="flex min-h-screen flex-col">
+      <Cabecera />
 
-      <h2>Agregar servicio</h2>
-      <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
-        {misCategorias.map((c) => (
-          <option key={c.id} value={c.id}>{c.name}</option>
-        ))}
-      </select>
-      <input placeholder="Título (ej. Reparación de fugas)" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-      <textarea rows={3} placeholder="Descripción del servicio" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
-      <input placeholder="Precio (ej. Desde $300 MXN)" value={precio} onChange={(e) => setPrecio(e.target.value)} />
-      <input placeholder="Estado" value={estado} onChange={(e) => setEstado(e.target.value)} />
-      <input placeholder="Municipio (zona donde trabajas)" value={municipio} onChange={(e) => setMunicipio(e.target.value)} />
-      <input placeholder="Colonia (opcional)" value={colonia} onChange={(e) => setColonia(e.target.value)} />
-      <button onClick={crear} disabled={guardando}>
-        {guardando ? "Guardando..." : "Agregar servicio"}
-      </button>
+      <main className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 py-8">
+        <h1>Mis servicios</h1>
 
-      {mensaje && <p>{mensaje}</p>}
+        <section className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-sm">
+          <h2>Agregar servicio</h2>
+          <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
+            {misCategorias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <input
+            placeholder="Título (ej. Reparación de fugas)"
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+          />
+          <textarea
+            rows={3}
+            placeholder="Descripción del servicio"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+          />
+          <input
+            placeholder="Precio (ej. Desde $300 MXN)"
+            value={precio}
+            onChange={(e) => setPrecio(e.target.value)}
+          />
+          <input placeholder="Estado" value={estado} onChange={(e) => setEstado(e.target.value)} />
+          <input
+            placeholder="Municipio (zona donde trabajas)"
+            value={municipio}
+            onChange={(e) => setMunicipio(e.target.value)}
+          />
+          <input
+            placeholder="Colonia (opcional)"
+            value={colonia}
+            onChange={(e) => setColonia(e.target.value)}
+          />
 
-      <h2>Mis servicios publicados</h2>
-      {servicios.length === 0 && <p>Todavía no tienes servicios.</p>}
-      {servicios.map((s) => (
-        <div key={s.id} style={{ border: "1px solid #666", borderRadius: 8, padding: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-          <strong>{s.title}</strong>
-          <span>{nombreCategoria(s.category_id)}</span>
-          {s.description && <span>{s.description}</span>}
-          {s.price_text && <span>Precio: {s.price_text}</span>}
-          <span>Zona: {[s.neighborhood, s.municipality, s.state].filter(Boolean).join(", ") || "Sin zona"}</span>
-          <span>Estado: {s.active ? "Visible al público" : "Oculto"}</span>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => alternarActivo(s)}>{s.active ? "Ocultar" : "Publicar"}</button>
-            <button onClick={() => borrar(s)}>Borrar</button>
+          {mensaje && (
+            <p
+              className={
+                esOk
+                  ? "rounded-lg bg-emerald-100 px-3 py-2 text-sm text-emerald-800"
+                  : "rounded-lg bg-red-100 px-3 py-2 text-sm text-danger"
+              }
+            >
+              {mensaje}
+            </p>
+          )}
+
+          <button onClick={crear} disabled={guardando} className="w-full">
+            {guardando ? "Guardando..." : "Agregar servicio"}
+          </button>
+        </section>
+
+        <h2>Mis servicios publicados</h2>
+
+        {servicios.length === 0 && (
+          <p className="py-4 text-center text-muted">Todavía no tienes servicios.</p>
+        )}
+
+        {servicios.map((s) => (
+          <div key={s.id} className="flex flex-col gap-2 rounded-2xl bg-card p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <strong className="text-lg">{s.title}</strong>
+              <span
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+                  s.active ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"
+                }`}
+              >
+                {s.active ? "Visible al público" : "Oculto"}
+              </span>
+            </div>
+
+            <span className="self-start rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-primary-dark">
+              {nombreCategoria(s.category_id)}
+            </span>
+
+            {s.description && <span>{s.description}</span>}
+            {s.price_text && <span className="font-bold text-primary">{s.price_text}</span>}
+            <span className="text-sm text-muted">
+              📍 {[s.neighborhood, s.municipality, s.state].filter(Boolean).join(", ") || "Sin zona"}
+            </span>
+
+            <div className="mt-2 flex gap-3">
+              <button
+                onClick={() => alternarActivo(s)}
+                className="flex-1 border border-primary bg-white text-primary"
+              >
+                {s.active ? "Ocultar" : "Publicar"}
+              </button>
+              <button onClick={() => borrar(s)} className="flex-1 bg-danger">
+                Borrar
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
 
-      <a href="/perfil">Mi perfil profesional</a>
-      <a href="/cuenta">Volver a mi cuenta</a>
-    </main>
+        <a href="/perfil" className="text-center">
+          Mi perfil profesional
+        </a>
+        <a href="/cuenta" className="text-center">
+          Volver a mi cuenta
+        </a>
+      </main>
+    </div>
   );
 }
