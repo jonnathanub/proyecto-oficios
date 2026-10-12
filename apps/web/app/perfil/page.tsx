@@ -6,6 +6,21 @@ import { supabase } from "../../lib/supabase";
 
 type Categoria = { id: string; name: string };
 
+function Cabecera() {
+  return (
+    <header className="border-b border-border bg-card">
+      <nav className="mx-auto flex w-full max-w-xl items-center justify-between px-4 py-3">
+        <a href="/" className="text-2xl font-bold text-primary hover:no-underline">
+          Oficios
+        </a>
+        <a href="/cuenta" className="text-sm">
+          Mi cuenta
+        </a>
+      </nav>
+    </header>
+  );
+}
+
 export default function Perfil() {
   const router = useRouter();
   const [cargando, setCargando] = useState(true);
@@ -59,7 +74,7 @@ export default function Perfil() {
         .maybeSingle();
 
       if (!p) {
-        setMensaje("Tu perfil profesional todavía no existe. Corre el SQL del Paso 1 en Supabase.");
+        setMensaje("Tu perfil profesional todavía no existe.");
         setCargando(false);
         return;
       }
@@ -152,57 +167,122 @@ export default function Perfil() {
     setMensaje("¡Perfil guardado!");
   }
 
-  if (cargando) return <main style={{ padding: 16 }}>Cargando...</main>;
+  const esOk = mensaje.startsWith("¡Perfil guardado");
+
+  if (cargando) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto w-full max-w-xl px-4 py-10 text-center text-muted">
+          Cargando...
+        </main>
+      </div>
+    );
+  }
 
   if (!esProfesional) {
     return (
-      <main style={{ maxWidth: 480, margin: "40px auto", padding: 16 }}>
-        <h1>Mi perfil profesional</h1>
-        <p>Esta sección es solo para cuentas de tipo Profesional.</p>
-        <a href="/cuenta">Volver a mi cuenta</a>
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-8">
+          <h1>Mi perfil profesional</h1>
+          <p className="rounded-2xl bg-card p-5 shadow-sm">
+            Esta sección es solo para cuentas de tipo Profesional.
+          </p>
+          <a href="/cuenta">Volver a mi cuenta</a>
+        </main>
+      </div>
     );
   }
 
   if (!perfilId) {
     return (
-      <main style={{ maxWidth: 480, margin: "40px auto", padding: 16 }}>
-        <h1>Mi perfil profesional</h1>
-        <p>{mensaje}</p>
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <Cabecera />
+        <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-8">
+          <h1>Mi perfil profesional</h1>
+          <p className="rounded-2xl bg-card p-5 shadow-sm">{mensaje}</p>
+        </main>
+      </div>
     );
   }
 
   return (
-    <main style={{ maxWidth: 480, margin: "40px auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <h1>Mi perfil profesional</h1>
+    <div className="flex min-h-screen flex-col">
+      <Cabecera />
 
-      <h2>Contacto y ubicación</h2>
-      <input placeholder="Teléfono" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
-      <input placeholder="Estado (ej. Estado de México)" value={estado} onChange={(e) => setEstado(e.target.value)} />
-      <input placeholder="Municipio (ej. Toluca)" value={municipio} onChange={(e) => setMunicipio(e.target.value)} />
-      <input placeholder="Colonia" value={colonia} onChange={(e) => setColonia(e.target.value)} />
+      <main className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 py-8">
+        <h1>Mi perfil profesional</h1>
 
-      <h2>Sobre mí</h2>
-      <textarea rows={4} placeholder="Describe tu experiencia y qué tipo de trabajos haces" value={bio} onChange={(e) => setBio(e.target.value)} />
-      <input type="number" min={0} max={60} placeholder="Años de experiencia" value={anios} onChange={(e) => setAnios(e.target.value)} />
-      <input placeholder="Horario (ej. Lunes a sábado, 8am a 6pm)" value={horario} onChange={(e) => setHorario(e.target.value)} />
+        <section className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-sm">
+          <h2>Contacto y ubicación</h2>
+          <input placeholder="Teléfono" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+          <input placeholder="Estado (ej. Estado de México)" value={estado} onChange={(e) => setEstado(e.target.value)} />
+          <input placeholder="Municipio (ej. Toluca)" value={municipio} onChange={(e) => setMunicipio(e.target.value)} />
+          <input placeholder="Colonia" value={colonia} onChange={(e) => setColonia(e.target.value)} />
+        </section>
 
-      <h2>Mis oficios</h2>
-      {categorias.map((c) => (
-        <label key={c.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input type="checkbox" checked={seleccion.includes(c.id)} onChange={() => alternar(c.id)} />
-          {c.name}
-        </label>
-      ))}
+        <section className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-sm">
+          <h2>Sobre mí</h2>
+          <textarea
+            rows={4}
+            placeholder="Describe tu experiencia y qué tipo de trabajos haces"
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+          />
+          <input
+            type="number"
+            min={0}
+            max={60}
+            placeholder="Años de experiencia"
+            value={anios}
+            onChange={(e) => setAnios(e.target.value)}
+          />
+          <input
+            placeholder="Horario (ej. Lunes a sábado, 8am a 6pm)"
+            value={horario}
+            onChange={(e) => setHorario(e.target.value)}
+          />
+        </section>
 
-      <button onClick={guardar} disabled={guardando}>
-        {guardando ? "Guardando..." : "Guardar perfil"}
-      </button>
+        <section className="flex flex-col gap-1 rounded-2xl bg-card p-5 shadow-sm">
+          <h2 className="mb-2">Mis oficios</h2>
+          {categorias.map((c) => (
+            <label
+              key={c.id}
+              className="flex cursor-pointer items-center gap-3 border-b border-border py-3 last:border-b-0"
+            >
+              <input
+                type="checkbox"
+                className="h-5 w-5 shrink-0 p-0 accent-primary"
+                checked={seleccion.includes(c.id)}
+                onChange={() => alternar(c.id)}
+              />
+              <span>{c.name}</span>
+            </label>
+          ))}
+        </section>
 
-      {mensaje && <p>{mensaje}</p>}
+        {mensaje && (
+          <p
+            className={
+              esOk
+                ? "rounded-lg bg-emerald-100 px-3 py-2 text-sm text-emerald-800"
+                : "rounded-lg bg-red-100 px-3 py-2 text-sm text-danger"
+            }
+          >
+            {mensaje}
+          </p>
+        )}
 
-      <a href="/cuenta">Volver a mi cuenta</a>
-    </main>
+        <button onClick={guardar} disabled={guardando} className="w-full">
+          {guardando ? "Guardando..." : "Guardar perfil"}
+        </button>
+
+        <a href="/cuenta" className="text-center">
+          Volver a mi cuenta
+        </a>
+      </main>
+    </div>
   );
 }
