@@ -20,6 +20,12 @@ type Suscripcion = {
   simulated: boolean;
 };
 
+const ESTADOS: Record<string, { texto: string; clase: string }> = {
+  active: { texto: "Activa", clase: "bg-emerald-100 text-emerald-800" },
+  cancelled: { texto: "Cancelada", clase: "bg-red-100 text-red-800" },
+  expired: { texto: "Vencida", clase: "bg-gray-200 text-gray-700" },
+};
+
 export default function AdminSuscripciones() {
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [suscripciones, setSuscripciones] = useState<Suscripcion[]>([]);
@@ -119,86 +125,149 @@ export default function AdminSuscripciones() {
     setActualizando(null);
   }
 
-  if (cargando) return <p>Cargando...</p>;
+  if (cargando) return <p className="py-10 text-center text-muted">Cargando...</p>;
 
   return (
-    <main style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div>
-        <h1>Planes de suscripcion</h1>
+    <main className="flex flex-col gap-10">
+      <section className="flex flex-col gap-5">
+        <h1>Planes de suscripción</h1>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 320, marginBottom: 16 }}>
-          <input placeholder="Nombre del plan (ej. Destacado)" value={nombrePlan} onChange={(e) => setNombrePlan(e.target.value)} />
-          <input placeholder="Precio (ej. 199)" value={precioPlan} onChange={(e) => setPrecioPlan(e.target.value)} />
-          <button onClick={crearPlan} disabled={guardando}>
+        <div className="flex max-w-md flex-col gap-3 rounded-2xl bg-card p-5 shadow-sm">
+          <h2>Nuevo plan</h2>
+          <input
+            placeholder="Nombre del plan (ej. Destacado)"
+            value={nombrePlan}
+            onChange={(e) => setNombrePlan(e.target.value)}
+          />
+          <input
+            placeholder="Precio (ej. 199)"
+            value={precioPlan}
+            onChange={(e) => setPrecioPlan(e.target.value)}
+          />
+
+          {mensaje && (
+            <p className="rounded-lg bg-red-100 px-3 py-2 text-sm text-danger">{mensaje}</p>
+          )}
+
+          <button onClick={crearPlan} disabled={guardando} className="w-full">
             {guardando ? "Guardando..." : "Crear plan"}
           </button>
-          {mensaje && <p>{mensaje}</p>}
         </div>
 
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left" }}>Nombre</th>
-              <th style={{ textAlign: "left" }}>Precio</th>
-              <th style={{ textAlign: "left" }}>Estado</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {planes.map((p) => (
-              <tr key={p.id} style={{ borderTop: "1px solid #444" }}>
-                <td>{p.name}</td>
-                <td>${p.price} MXN</td>
-                <td>{p.active ? "Activo" : "Desactivado"}</td>
-                <td>
-                  <button onClick={() => alternarPlanActivo(p.id, p.active)} disabled={actualizando === p.id}>
-                    {p.active ? "Desactivar" : "Activar"}
-                  </button>
-                </td>
+        <div className="overflow-x-auto rounded-2xl bg-card shadow-sm">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {planes.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-6 text-center text-muted">
+                    Todavía no hay planes.
+                  </td>
+                </tr>
+              )}
+              {planes.map((p) => (
+                <tr key={p.id} className="border-t border-border">
+                  <td className="font-medium">{p.name}</td>
+                  <td className="font-bold text-primary">${p.price} MXN</td>
+                  <td>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-bold ${
+                        p.active ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {p.active ? "Activo" : "Desactivado"}
+                    </span>
+                  </td>
+                  <td className="text-right">
+                    <button
+                      onClick={() => alternarPlanActivo(p.id, p.active)}
+                      disabled={actualizando === p.id}
+                      className={p.active ? "border border-primary bg-white text-primary" : ""}
+                    >
+                      {p.active ? "Desactivar" : "Activar"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-      <div>
+      <section className="flex flex-col gap-5">
         <h1>Suscripciones de profesionales</h1>
-        {suscripciones.length === 0 && <p>No hay suscripciones todavia.</p>}
 
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left" }}>Profesional</th>
-              <th style={{ textAlign: "left" }}>Plan</th>
-              <th style={{ textAlign: "left" }}>Estado</th>
-              <th style={{ textAlign: "left" }}>Simulada</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {suscripciones.map((s) => (
-              <tr key={s.id} style={{ borderTop: "1px solid #444" }}>
-                <td>{nombresProfesional[s.professional_id] ?? "Sin nombre"}</td>
-                <td>{nombresPlan[s.plan_id] ?? "-"}</td>
-                <td>{s.status}</td>
-                <td>{s.simulated ? "Si" : "No"}</td>
-                <td style={{ display: "flex", gap: 6 }}>
-                  {s.status !== "active" && (
-                    <button onClick={() => cambiarEstadoSuscripcion(s.id, "active")} disabled={actualizando === s.id}>
-                      Activar
-                    </button>
-                  )}
-                  {s.status !== "cancelled" && (
-                    <button onClick={() => cambiarEstadoSuscripcion(s.id, "cancelled")} disabled={actualizando === s.id}>
-                      Cancelar
-                    </button>
-                  )}
-                </td>
+        <div className="overflow-x-auto rounded-2xl bg-card shadow-sm">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr>
+                <th>Profesional</th>
+                <th>Plan</th>
+                <th>Estado</th>
+                <th>Simulada</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {suscripciones.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-muted">
+                    No hay suscripciones todavía.
+                  </td>
+                </tr>
+              )}
+              {suscripciones.map((s) => {
+                const estado = ESTADOS[s.status] ?? {
+                  texto: s.status,
+                  clase: "bg-gray-100 text-gray-700",
+                };
+                return (
+                  <tr key={s.id} className="border-t border-border">
+                    <td className="font-medium">
+                      {nombresProfesional[s.professional_id] ?? "Sin nombre"}
+                    </td>
+                    <td>{nombresPlan[s.plan_id] ?? "-"}</td>
+                    <td>
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${estado.clase}`}>
+                        {estado.texto}
+                      </span>
+                    </td>
+                    <td className="text-muted">{s.simulated ? "Sí" : "No"}</td>
+                    <td>
+                      <div className="flex justify-end gap-2">
+                        {s.status !== "active" && (
+                          <button
+                            onClick={() => cambiarEstadoSuscripcion(s.id, "active")}
+                            disabled={actualizando === s.id}
+                          >
+                            Activar
+                          </button>
+                        )}
+                        {s.status !== "cancelled" && (
+                          <button
+                            onClick={() => cambiarEstadoSuscripcion(s.id, "cancelled")}
+                            disabled={actualizando === s.id}
+                            className="bg-danger"
+                          >
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
   );
 }
