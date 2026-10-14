@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { View, Text, FlatList, StyleSheet, Linking, AppState } from "react-native";
 import { supabase } from "../lib/supabase";
 import { colors, spacing, radius, font, shadow } from "../theme";
 import Boton from "../components/Boton";
@@ -68,19 +68,36 @@ export default function Suscripcion({ navigation }: any) {
     cargar();
   }, [navigation]);
 
+  // Al volver a la app después de pagar, se refresca el estado
+  useEffect(() => {
+    const suscripcion = AppState.addEventListener("change", (estado) => {
+      if (estado === "active") cargar();
+    });
+    return () => suscripcion.remove();
+  }, []);
+
   async function contratar(planId: string) {
     setProcesando(planId);
     setMensaje("");
 
-    const { error } = await supabase.rpc("contratar_plan", { p_plan_id: planId });
+    const { data, error } = await supabase.functions.invoke("crear-pago", {
+      body: { plan_id: planId },
+    });
 
-    if (error) {
-      setMensaje("No se pudo activar: " + error.message);
+    if (error || !data?.url) {
+      let texto = "No se pudo iniciar el pago.";
+      try {
+        const cuerpo = await (error as any)?.context?.json();
+        if (cuerpo?.error) texto = cuerpo.error;
+      } catch (_) {
+        /* sin detalle */
+      }
+      setMensaje(texto);
       setProcesando(null);
       return;
     }
 
-    await cargar();
+    await Linking.openURL(data.url);
     setProcesando(null);
   }
 
@@ -125,7 +142,7 @@ export default function Suscripcion({ navigation }: any) {
 
       <View style={styles.aviso}>
         <Text style={styles.avisoTexto}>
-          Los pagos son simulados por ahora, no se realiza ningún cobro real.
+          Pagas con Mercado Pago. Tu plan se activa en cuanto se confirma el pago.
         </Text>
       </View>
 
@@ -164,14 +181,16 @@ export default function Suscripcion({ navigation }: any) {
                 <Text style={styles.precio}>
                   ${p.price} <Text style={styles.precioUnidad}>MXN / mes</Text>
                 </Text>
-                <Text style={styles.simulado}>(simulado)</Text>
                 <Boton
-                  titulo={procesando === p.id ? "Activando..." : "Contratar"}
+                  titulo={procesando === p.id ? "Abriendo el pago..." : "Contratar"}
                   onPress={() => contratar(p.id)}
                   deshabilitado={procesando === p.id}
                 />
               </View>
             )}
+            ListFooterComponent={
+              <Boton titulo="Ya pagué, actualizar" tipo="secundario" onPress={cargar} />
+            }
           />
         </View>
       )}
@@ -201,11 +220,11 @@ const styles = StyleSheet.create({
   texto: { fontSize: font.body, color: colors.text },
   textoSuave: { fontSize: font.body, color: colors.textMuted },
   aviso: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: "#DBEAFE",
     borderRadius: radius.sm,
     padding: spacing.sm + 4,
   },
-  avisoTexto: { fontSize: font.small, color: "#92400E" },
+  avisoTexto: { fontSize: font.small, color: colors.primaryDark },
   seccion: {
     fontSize: font.body,
     fontWeight: "bold",
@@ -225,7 +244,6 @@ const styles = StyleSheet.create({
   tituloTarjeta: { fontSize: 18, fontWeight: "bold", color: colors.text },
   precio: { fontSize: font.big, fontWeight: "bold", color: colors.primary },
   precioUnidad: { fontSize: font.small, fontWeight: "600", color: colors.textMuted },
-  simulado: { fontSize: font.small, color: colors.textMuted },
   errorCaja: { backgroundColor: "#FEE2E2", borderRadius: radius.sm, padding: spacing.sm + 4 },
   errorTexto: { color: colors.danger, fontSize: font.small },
   link: {

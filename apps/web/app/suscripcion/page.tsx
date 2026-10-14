@@ -88,16 +88,24 @@ export default function Suscripcion() {
     setProcesando(planId);
     setMensaje("");
 
-    const { error } = await supabase.rpc("contratar_plan", { p_plan_id: planId });
+    const { data, error } = await supabase.functions.invoke("crear-pago", {
+      body: { plan_id: planId },
+    });
 
-    if (error) {
-      setMensaje(`No se pudo activar: ${error.message}`);
+    if (error || !data?.url) {
+      let texto = "No se pudo iniciar el pago.";
+      try {
+        const cuerpo = await (error as any)?.context?.json();
+        if (cuerpo?.error) texto = cuerpo.error;
+      } catch (_) {
+        /* sin detalle */
+      }
+      setMensaje(texto);
       setProcesando(null);
       return;
     }
 
-    await cargar();
-    setProcesando(null);
+    window.location.href = data.url;
   }
 
   async function cancelar() {
@@ -144,8 +152,8 @@ export default function Suscripcion() {
       <main className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 py-8">
         <h1>Mi suscripción</h1>
 
-        <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-800">
-          Los pagos son simulados por ahora, no se realiza ningún cobro real.
+        <p className="rounded-lg bg-blue-100 px-3 py-2 text-sm text-primary-dark">
+          Pagas con Mercado Pago. Tu plan se activa en cuanto se confirma el pago.
         </p>
 
         {actual ? (
@@ -178,12 +186,17 @@ export default function Suscripcion() {
                   ${p.price}{" "}
                   <span className="text-sm font-semibold text-muted">MXN / mes</span>
                 </p>
-                <p className="text-sm text-muted">(simulado)</p>
                 <button onClick={() => contratar(p.id)} disabled={procesando === p.id}>
-                  {procesando === p.id ? "Activando..." : "Contratar"}
+                  {procesando === p.id ? "Abriendo el pago..." : "Contratar"}
                 </button>
               </div>
             ))}
+            <button
+              onClick={() => cargar()}
+              className="border border-primary bg-white text-primary"
+            >
+              Ya pagué, actualizar
+            </button>
           </div>
         )}
 
